@@ -98,7 +98,9 @@ type AnalysisResult = {
 type ProviderName =
   | "OpenRouter"
   | "Groq Account 1"
-  | "Groq Account 2";
+  | "Groq Account 2"
+  | "Groq Account 3"
+  | "Groq Account 4";
 
 /**
  * =========================================================
@@ -1608,21 +1610,33 @@ export async function POST(
       process.env
         .GROQ_API_KEY_2;
 
-    console.log(
-      "[Snap2Study] Providers available:",
-      {
-        openRouterAccount2:
-          Boolean(
-            openRouterKey
-          ),
+    const groqKey3 =
+  process.env
+    .GROQ_API_KEY_3;
 
-        groqAccount1:
-          Boolean(groqKey1),
+const groqKey4 =
+  process.env
+    .GROQ_API_KEY_4;
 
-        groqAccount2:
-          Boolean(groqKey2),
-      }
-    );
+   console.log(
+  "[Snap2Study] Providers available:",
+  {
+    openRouterAccount2:
+      Boolean(openRouterKey),
+
+    groqAccount1:
+      Boolean(groqKey1),
+
+    groqAccount2:
+      Boolean(groqKey2),
+
+    groqAccount3:
+      Boolean(groqKey3),
+
+    groqAccount4:
+      Boolean(groqKey4),
+  }
+);
 
     /**
      * =======================================================
@@ -1631,10 +1645,12 @@ export async function POST(
      */
 
     if (
-      !openRouterKey &&
-      !groqKey1 &&
-      !groqKey2
-    ) {
+  !openRouterKey &&
+  !groqKey1 &&
+  !groqKey2 &&
+  !groqKey3 &&
+  !groqKey4
+) {
       console.error(
         "[Snap2Study] No AI provider keys configured."
       );
@@ -1820,6 +1836,118 @@ export async function POST(
         "Groq Account 2: API key missing"
       );
     }
+
+    await wait(
+  FALLBACK_DELAY_MS
+);
+
+/**
+ * =======================================================
+ * PROVIDER 4
+ * GROQ ACCOUNT 3
+ * =======================================================
+ */
+
+if (groqKey3) {
+  const result =
+    await requestProvider(
+      "Groq Account 3",
+      GROQ_URL,
+      groqKey3,
+      GROQ_MODEL_1,
+      imageString,
+      GROQ_TIMEOUT_MS
+    );
+
+  if (
+    result.success
+  ) {
+    return NextResponse.json(
+      result.result,
+      {
+        status: 200,
+        headers: {
+          "X-Snap2Study-Provider":
+            "Groq Account 3",
+          "X-Snap2Study-Model":
+            GROQ_MODEL_1,
+          "X-RateLimit-Remaining":
+            String(
+              rateLimit.remaining
+            ),
+        },
+      }
+    );
+  }
+
+  failures.push(
+    `Groq Account 3: ${result.reason}`
+  );
+} else {
+  console.error(
+    "[Snap2Study] GROQ_API_KEY_3 missing."
+  );
+
+  failures.push(
+    "Groq Account 3: API key missing"
+  );
+}
+
+await wait(
+  FALLBACK_DELAY_MS
+);
+
+/**
+ * =======================================================
+ * PROVIDER 5
+ * GROQ ACCOUNT 4
+ * =======================================================
+ */
+
+if (groqKey4) {
+  const result =
+    await requestProvider(
+      "Groq Account 4",
+      GROQ_URL,
+      groqKey4,
+      GROQ_MODEL_2,
+      imageString,
+      GROQ_TIMEOUT_MS
+    );
+
+  if (
+    result.success
+  ) {
+    return NextResponse.json(
+      result.result,
+      {
+        status: 200,
+        headers: {
+          "X-Snap2Study-Provider":
+            "Groq Account 4",
+          "X-Snap2Study-Model":
+            GROQ_MODEL_2,
+          "X-RateLimit-Remaining":
+            String(
+              rateLimit.remaining
+            ),
+        },
+      }
+    );
+  }
+
+  failures.push(
+    `Groq Account 4: ${result.reason}`
+  );
+} else {
+  console.error(
+    "[Snap2Study] GROQ_API_KEY_4 missing."
+  );
+
+  failures.push(
+    "Groq Account 4: API key missing"
+  );
+}
 
     /**
      * =======================================================
