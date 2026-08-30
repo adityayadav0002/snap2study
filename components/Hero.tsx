@@ -149,6 +149,9 @@ export default function Hero({ oncontinue }: HeroProps) {
               Snap a question and turn it into a simple,
               useful study experience. No unnecessary
               steps. Just learn.
+
+              Questions processing may take up to 2-3 minutes,
+              So, Kindly have patience.
             </p>
 
             {/* =================================================

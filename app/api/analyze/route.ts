@@ -96,11 +96,11 @@ type AnalysisResult = {
 };
 
 type ProviderName =
-  | "OpenRouter"
   | "Groq Account 1"
   | "Groq Account 2"
   | "Groq Account 3"
-  | "Groq Account 4";
+  | "Groq Account 4"
+  | "OpenRouter";
 
 /**
  * =========================================================
@@ -1597,11 +1597,7 @@ export async function POST(
      * 6. API KEYS
      * =======================================================
      */
-
-    const openRouterKey =
-      process.env
-        .OPENROUTER_API_KEY_2;
-
+ 
     const groqKey1 =
       process.env
         .GROQ_API_KEY_1;
@@ -1618,11 +1614,15 @@ const groqKey4 =
   process.env
     .GROQ_API_KEY_4;
 
+    const openRouterKey =
+      process.env
+        .OPENROUTER_API_KEY_2;
+
+
    console.log(
   "[Snap2Study] Providers available:",
   {
-    openRouterAccount2:
-      Boolean(openRouterKey),
+    
 
     groqAccount1:
       Boolean(groqKey1),
@@ -1635,6 +1635,9 @@ const groqKey4 =
 
     groqAccount4:
       Boolean(groqKey4),
+
+      openRouterAccount2:
+      Boolean(openRouterKey),
   }
 );
 
@@ -1645,11 +1648,11 @@ const groqKey4 =
      */
 
     if (
-  !openRouterKey &&
   !groqKey1 &&
   !groqKey2 &&
   !groqKey3 &&
-  !groqKey4
+  !groqKey4 &&
+  !openRouterKey
 ) {
       console.error(
         "[Snap2Study] No AI provider keys configured."
@@ -1669,69 +1672,10 @@ const groqKey4 =
     const failures: string[] =
       [];
 
+
     /**
      * =======================================================
      * PROVIDER 1
-     * OPENROUTER → NEMOTRON
-     * =======================================================
-     */
-
-    if (openRouterKey) {
-      const result =
-        await requestProvider(
-          "OpenRouter",
-          OPENROUTER_URL,
-          openRouterKey,
-          NEMOTRON_MODEL,
-          imageString,
-          NEMOTRON_TIMEOUT_MS
-        );
-
-      if (
-        result.success
-      ) {
-        return NextResponse.json(
-          result.result,
-          {
-            status: 200,
-            headers: {
-              "X-Snap2Study-Provider":
-                "OpenRouter",
-              "X-Snap2Study-Model":
-                NEMOTRON_MODEL,
-              "X-RateLimit-Remaining":
-                String(
-                  rateLimit.remaining
-                ),
-            },
-          }
-        );
-      }
-
-      failures.push(
-        `OpenRouter Nemotron: ${result.reason}`
-      );
-    } else {
-      console.error(
-        "[Snap2Study] OPENROUTER_API_KEY_2 missing."
-      );
-
-      failures.push(
-        "OpenRouter Nemotron: API key missing"
-      );
-    }
-
-    /**
-     * Very short delay.
-     */
-
-    await wait(
-      FALLBACK_DELAY_MS
-    );
-
-    /**
-     * =======================================================
-     * PROVIDER 2
      * GROQ ACCOUNT 1
      * =======================================================
      */
@@ -1787,7 +1731,7 @@ const groqKey4 =
 
     /**
      * =======================================================
-     * PROVIDER 3
+     * PROVIDER 2
      * GROQ ACCOUNT 2
      * =======================================================
      */
@@ -1843,7 +1787,7 @@ const groqKey4 =
 
 /**
  * =======================================================
- * PROVIDER 4
+ * PROVIDER 3
  * GROQ ACCOUNT 3
  * =======================================================
  */
@@ -1899,7 +1843,7 @@ await wait(
 
 /**
  * =======================================================
- * PROVIDER 5
+ * PROVIDER 4
  * GROQ ACCOUNT 4
  * =======================================================
  */
@@ -1948,6 +1892,68 @@ if (groqKey4) {
     "Groq Account 4: API key missing"
   );
 }
+
+
+    /**
+     * Very short delay.
+     */
+
+    await wait(
+      FALLBACK_DELAY_MS
+    );
+
+/**
+     * =======================================================
+     * PROVIDER 5
+     * OPENROUTER → NEMOTRON
+     * =======================================================
+     */
+
+    if (openRouterKey) {
+      const result =
+        await requestProvider(
+          "OpenRouter",
+          OPENROUTER_URL,
+          openRouterKey,
+          NEMOTRON_MODEL,
+          imageString,
+          NEMOTRON_TIMEOUT_MS
+        );
+
+      if (
+        result.success
+      ) {
+        return NextResponse.json(
+          result.result,
+          {
+            status: 200,
+            headers: {
+              "X-Snap2Study-Provider":
+                "OpenRouter",
+              "X-Snap2Study-Model":
+                NEMOTRON_MODEL,
+              "X-RateLimit-Remaining":
+                String(
+                  rateLimit.remaining
+                ),
+            },
+          }
+        );
+      }
+
+      failures.push(
+        `OpenRouter Nemotron: ${result.reason}`
+      );
+    } else {
+      console.error(
+        "[Snap2Study] OPENROUTER_API_KEY_2 missing."
+      );
+
+      failures.push(
+        "OpenRouter Nemotron: API key missing"
+      );
+    }
+
 
     /**
      * =======================================================
