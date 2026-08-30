@@ -1,105 +1,85 @@
+"use client";
+
 export default function Navbar() {
-  
   return (
-    <header className="w-full">
-      <nav className="container flex min-h-20 items-center justify-between border-b-2 border-black">
+    <header className="sticky top-0 z-50 w-full border-b-2 border-black bg-(--paper)/95 backdrop-blur-md">
+      <nav className="container flex min-h-20 items-center justify-between">
 
         {/* BRAND */}
 
-        <div className="flex items-center gap-4">
-
-          <div className="mono text-[11px] font-bold tracking-wider">
-            001
+        <a
+          href="/"
+          className="group flex items-center gap-3"
+        >
+          <div className="mono flex h-8 w-8 items-center justify-center border-2 border-black bg-(--yellow) text-[9px] font-bold transition-transform duration-200 group-hover:rotate-3">
+            S2S
           </div>
 
-          <div className="h-7 w-0.5 bg-black" />
+          <div className="hidden h-7 w-px bg-black sm:block" />
 
-          <div className="text-lg font-bold tracking-tight">
+          <div className="text-[15px] font-black tracking-[-0.03em] sm:text-lg">
             SNAP2STUDY
           </div>
-
-        </div>
-
+        </a>
 
         {/* CENTER NAVIGATION */}
 
-        <div className="hidden items-center gap-8 md:flex">
-
+        <div className="hidden items-center gap-9 md:flex">
           <a
             href="#how-it-works"
-            className="
-              mono
-              text-[10px]
-              uppercase
-              tracking-[0.14em]
-              transition-transform
-              duration-200
-              hover:-translate-y-0.5
-            "
+            className="mono relative text-[9px] font-bold uppercase tracking-[0.15em] after:absolute after:-bottom-2 after:left-0 after:h-px after:w-0 after:bg-black after:transition-all hover:after:w-full"
           >
             How it works
           </a>
 
           <a
             href="#about"
-            className="
-              mono
-              text-[10px]
-              uppercase
-              tracking-[0.14em]
-              transition-transform
-              duration-200
-              hover:-translate-y-0.5
-            "
+            className="mono relative text-[9px] font-bold uppercase tracking-[0.15em] after:absolute after:-bottom-2 after:left-0 after:h-px after:w-0 after:bg-black after:transition-all hover:after:w-full"
           >
             About
           </a>
-
         </div>
-
 
         {/* CTA */}
 
-        <div className="flex items-center">
+        <a
+          href="#snap"
+          className="
+            group
+            brutal-border
+            flex
+            items-center
+            gap-3
+            bg-(--yellow)
+            px-4
+            py-3
+            text-[9px]
+            font-black
+            uppercase
+            tracking-[0.12em]
+            shadow-[3px_3px_0_var(--black)]
+            transition-all
+            duration-200
+            hover:-translate-x-0.5
+            hover:-translate-y-0.5
+            hover:shadow-[5px_5px_0_var(--black)]
+            active:translate-x-0
+            active:translate-y-0
+            active:shadow-none
+          "
+        >
+          <span className="hidden sm:inline">
+            Snap a question
+          </span>
 
-          <a
-  href="#snap"
-  className="
-    group
-    brutal-border
-    flex
-    items-center
-    gap-3
-    bg-(--yellow)
-    px-4
-    py-3
-    text-[11px]
-    font-bold
-    uppercase
-    tracking-[0.08em]
-    transition-all
-    duration-200
-    hover:-translate-x-0.5
-    hover:-translate-y-0.5
-    hover:shadow-[4px_4px_0_var(--black)]
-  "
->
-  <span>Snap a question</span>
+          <span className="sm:hidden">
+            Snap
+          </span>
 
-  <span
-    className="
-      inline-block
-      transition-transform
-      duration-200
-      group-hover:translate-x-1
-    "
-  >
-    →
-  </span>
-</a>
-
-        </div>
-
+          <span className="text-base transition-transform duration-200 group-hover:translate-x-1">
+            →
+          </span>
+        </a>
       </nav>
     </header>
   );

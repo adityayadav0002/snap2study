@@ -2,51 +2,51 @@
 
 import UploadBox from "./UploadBox";
 
-export default function Hero() {
+type HeroProps = {
+  oncontinue?: (file: File) => void;
+};
 
+export default function Hero({ oncontinue }: HeroProps) {
   return (
     <section className="relative overflow-hidden">
 
-      {/* =================================
-          ARTISTIC ORBIT
-      ================================= */}
+      {/* =================================================
+          BACKGROUND GRID
+      ================================================= */}
 
       <div
         className="
           pointer-events-none
           absolute
-          -right-32
-          top-20
+          inset-0
+          opacity-[0.045]
+          [background-image:linear-gradient(to_right,#111_1px,transparent_1px),linear-gradient(to_bottom,#111_1px,transparent_1px)]
+          [background-size:48px_48px]
+        "
+      />
+
+      {/* =================================================
+          DECORATIVE ORBIT
+      ================================================= */}
+
+      <div
+        className="
+          pointer-events-none
+          absolute
+          -right-48
+          top-24
           hidden
-          h-130
-          w-130
+          h-[620px]
+          w-[620px]
           rounded-full
           border
-          border-black/20
+          border-black/15
           lg:block
         "
       >
-        <div
-          className="
-            absolute
-            inset-12
-            rounded-full
-            border
-            border-black/20
-          "
-        />
+        <div className="absolute inset-16 rounded-full border border-black/15" />
 
-        <div
-          className="
-            absolute
-            inset-28
-            rounded-full
-            border
-            border-black/20
-          "
-        />
-
-        {/* ORBIT DOT */}
+        <div className="absolute inset-32 rounded-full border border-black/15" />
 
         <div
           className="
@@ -63,21 +63,32 @@ export default function Hero() {
             bg-(--coral)
           "
         />
-
       </div>
 
-
-      {/* =================================
-          HERO CONTENT
-      ================================= */}
+      {/* =================================================
+          MAIN CONTENT
+      ================================================= */}
 
       <div className="container relative">
 
-        <div className="grid min-h-[calc(100vh-80px)] items-center py-20 lg:grid-cols-[1fr_0.75fr] lg:gap-16">
+        <div
+          className="
+            grid
+            min-h-[calc(100vh-80px)]
+            items-center
+            gap-12
+            py-16
+            sm:py-20
+            lg:grid-cols-[1.1fr_0.9fr]
+            lg:py-20
+          "
+        >
 
-          {/* LEFT */}
+          {/* =================================================
+              LEFT
+          ================================================= */}
 
-          <div className="relative z-10">
+          <div className="relative z-10 snap-reveal">
 
             {/* EYEBROW */}
 
@@ -88,74 +99,50 @@ export default function Hero() {
                 flex
                 items-center
                 gap-3
-                text-[10px]
-                font-bold
+                text-[9px]
+                font-black
                 uppercase
-                tracking-[0.16em]
+                tracking-[0.18em]
+                text-black/65
               "
             >
-
-              <span
-                className="
-                  inline-block
-                  h-2
-                  w-2
-                  rounded-full
-                  bg-(--coral)
-                "
-              />
+              <span className="snap-pulse h-2 w-2 rounded-full bg-(--coral)" />
 
               Frictionless study / 001
-
             </div>
-
 
             {/* HEADLINE */}
 
             <h1
               className="
                 serif
-                max-w-4xl
-                text-6xl
-                leading-[0.9]
-                tracking-tight
-                sm:text-7xl
-                lg:text-8xl
-                xl:text-9xl
+                max-w-5xl
+                text-[clamp(3.5rem,8vw,8rem)]
+                leading-[0.86]
+                tracking-[-0.055em]
               "
             >
               Turn questions
               <br />
 
               <span className="relative inline-block">
+                into{" "}
 
-                into
-
-                <span
-                  className="
-                    relative
-                    ml-3
-                    inline-block
-                    text-(--coral)
-                  "
-                >
+                <span className="relative inline-block text-(--coral)">
                   understanding.
                 </span>
-
               </span>
-
             </h1>
-
 
             {/* DESCRIPTION */}
 
             <p
               className="
                 mt-8
-                max-w-lg
-                text-base
+                max-w-xl
+                text-[15px]
                 leading-7
-                text-black/65
+                text-black/60
                 sm:text-lg
               "
             >
@@ -164,34 +151,78 @@ export default function Hero() {
               steps. Just learn.
             </p>
 
+            {/* =================================================
+                UPLOAD
+            ================================================= */}
 
-            {/* Upload */}
-
-            <div id="snap" className="mt-9 max-w-xl">
-              <UploadBox />
+            <div
+              id="snap"
+              className="mt-9 max-w-2xl"
+            >
+              <UploadBox onContinue={oncontinue} />
             </div>
 
           </div>
 
-
-          {/* RIGHT — ARTISTIC PANEL */}
+          {/* =================================================
+              RIGHT VISUAL
+          ================================================= */}
 
           <div
             className="
               relative
-              mt-16
+              mt-8
               flex
-              min-h-100
+              min-h-[420px]
               items-center
               justify-center
               lg:mt-0
             "
           >
 
-            {/* Main yellow card */}
+            {/* BLUE SHAPE */}
 
             <div
               className="
+                absolute
+                right-2
+                top-4
+                h-20
+                w-20
+                rotate-6
+                border-2
+                border-black
+                bg-(--blue)
+                transition-transform
+                duration-500
+                hover:rotate-12
+              "
+            />
+
+            {/* CORAL SHAPE */}
+
+            <div
+              className="
+                snap-float
+                absolute
+                bottom-3
+                left-3
+                h-28
+                w-28
+                -rotate-6
+                border-2
+                border-black
+                bg-(--coral)
+              "
+            />
+
+            {/* =================================================
+                MAIN CARD
+            ================================================= */}
+
+            <div
+              className="
+                group
                 relative
                 z-10
                 w-full
@@ -199,13 +230,16 @@ export default function Hero() {
                 border-2
                 border-black
                 bg-(--yellow)
-                p-7
-                shadow-[9px_9px_0_var(--black)]
-                transition-transform
+                p-6
+                shadow-[10px_10px_0_var(--black)]
+                transition-all
                 duration-300
                 hover:-translate-y-2
+                hover:shadow-[14px_14px_0_var(--black)]
               "
             >
+
+              {/* CARD HEADER */}
 
               <div
                 className="
@@ -216,23 +250,21 @@ export default function Hero() {
                   border-b-2
                   border-black
                   pb-4
-                  text-[9px]
-                  font-bold
+                  text-[8px]
+                  font-black
                   uppercase
-                  tracking-wider
+                  tracking-[0.15em]
                 "
               >
+                <span>SNAP / 001</span>
 
-                <span>
-                  SNAP / 001
-                </span>
-
-                <span>
+                <span className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-black" />
                   READY
                 </span>
-
               </div>
 
+              {/* CARD BODY */}
 
               <div className="py-12">
 
@@ -248,25 +280,26 @@ export default function Hero() {
                     border-black
                     bg-(--cream)
                     text-5xl
+                    shadow-[4px_4px_0_var(--black)]
+                    transition-transform
+                    duration-300
+                    group-hover:rotate-3
                   "
                 >
                   +
                 </div>
 
-                <p
-                  className="
-                    serif
-                    mt-7
-                    text-center
-                    text-3xl
-                    leading-none
-                  "
-                >
+                <p className="serif mt-8 text-center text-3xl leading-none">
                   Drop a question.
+                </p>
+
+                <p className="mt-3 text-center text-xs text-black/55">
+                  One image. One clear explanation.
                 </p>
 
               </div>
 
+              {/* CARD FOOTER */}
 
               <div
                 className="
@@ -274,9 +307,10 @@ export default function Hero() {
                   border-t-2
                   border-black
                   pt-4
-                  text-[9px]
+                  text-[8px]
+                  font-bold
                   uppercase
-                  tracking-wider
+                  tracking-[0.13em]
                 "
               >
                 IMAGE → TEXT → KNOWLEDGE
@@ -284,85 +318,47 @@ export default function Hero() {
 
             </div>
 
-
-            {/* Coral shape */}
-
-            <div
-              className="
-                absolute
-                -bottom-3
-                -left-3
-                h-28
-                w-28
-                border-2
-                border-black
-                bg-(--coral)
-                lg:left-0
-              "
-            />
-
-
-            {/* Blue shape */}
-
-            <div
-              className="
-                absolute
-                -right-2
-                top-2
-                h-20
-                w-20
-                border-2
-                border-black
-                bg-(--blue)
-                lg:right-8
-              "
-            />
-
           </div>
 
         </div>
-
       </div>
 
+      {/* =================================================
+          META STRIP
+      ================================================= */}
 
-      {/* =================================
-          BOTTOM META BAR
-      ================================= */}
+      <div className="container border-t-2 border-black">
 
-      <div
-        className="
-          container
-          border-t-2
-          border-black
-        "
-      >
+        <div className="grid grid-cols-2 divide-x-2 divide-black md:grid-cols-4">
 
-        <div
-          className="
-            flex
-            flex-wrap
-            items-center
-            justify-between
-            gap-5
-            py-5
-          "
-        >
-
-          <div className="mono text-[9px] uppercase tracking-wider">
-            01 / SNAP
-          </div>
-
-          <div className="mono text-[9px] uppercase tracking-wider">
-            02 / UNDERSTAND
-          </div>
-
-          <div className="mono text-[9px] uppercase tracking-wider">
-            03 / LEARN
-          </div>
-
-          <div className="mono text-[9px] uppercase tracking-wider text-black/40">
-            SNAP2STUDY / 2026
-          </div>
+          {[
+            "01 / SNAP",
+            "02 / UNDERSTAND",
+            "03 / LEARN",
+            "SNAP2STUDY / 2026",
+          ].map((item, index) => (
+            <div
+              key={item}
+              className={`
+                mono
+                px-3
+                py-5
+                text-[8px]
+                font-bold
+                uppercase
+                tracking-[0.12em]
+                transition-colors
+                hover:bg-(--yellow)
+                ${
+                  index === 3
+                    ? "text-black/40"
+                    : ""
+                }
+              `}
+            >
+              {item}
+            </div>
+          ))}
 
         </div>
 
