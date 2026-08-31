@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type AnalysisResult = {
   question: string;
@@ -47,6 +47,10 @@ function isValidResult(
 
 export default function ResultsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const historyId =
+    searchParams.get("id");
 
   const [result, setResult] =
     useState<AnalysisResult | null>(null);
@@ -66,49 +70,149 @@ export default function ResultsPage() {
   const [showOriginal, setShowOriginal] =
     useState(true);
 
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
+
+  const [isHistoryResult, setIsHistoryResult] =
+    useState(false);
+
   /* =====================================================
      LOAD RESULT
   ===================================================== */
 
   useEffect(() => {
-    try {
-      const savedResult =
-        sessionStorage.getItem(
-          "snap2study_result"
+    let cancelled = false;
+
+    async function loadResult() {
+      setLoading(true);
+      setError("");
+
+      try {
+        /* =================================================
+           HISTORY RESULT
+        ================================================= */
+
+        if (historyId) {
+          setIsHistoryResult(true);
+
+          const response = await fetch(
+            `/api/history?id=${encodeURIComponent(
+              historyId
+            )}`,
+            {
+              method: "GET",
+              credentials: "include",
+              cache: "no-store",
+            }
+          );
+
+          if (response.status === 401) {
+            router.replace("/auth");
+            return;
+          }
+
+          const data =
+            await response.json();
+
+          if (!response.ok) {
+            throw new Error(
+              data?.error ||
+                "Unable to load this analysis."
+            );
+          }
+
+          const historyResult =
+            data?.history;
+
+          if (
+            !isValidResult(
+              historyResult
+            )
+          ) {
+            throw new Error(
+              "The saved analysis is invalid."
+            );
+          }
+
+          if (!cancelled) {
+            setResult(historyResult);
+
+            /*
+              History results do not currently
+              store the original uploaded image.
+            */
+            setImage(null);
+          }
+
+          return;
+        }
+
+        /* =================================================
+           NEW ANALYSIS RESULT
+        ================================================= */
+
+        setIsHistoryResult(false);
+
+        const savedResult =
+          sessionStorage.getItem(
+            "snap2study_result"
+          );
+
+        const savedImage =
+          sessionStorage.getItem(
+            "snap2study_image"
+          );
+
+        if (!savedResult) {
+          router.replace("/");
+          return;
+        }
+
+        const parsed =
+          JSON.parse(savedResult);
+
+        if (!isValidResult(parsed)) {
+          sessionStorage.removeItem(
+            "snap2study_result"
+          );
+
+          router.replace("/");
+          return;
+        }
+
+        if (!cancelled) {
+          setResult(parsed);
+          setImage(savedImage);
+        }
+      } catch (err) {
+        console.error(
+          "[Snap2Study] Failed to load result:",
+          err
         );
 
-      const savedImage =
-        sessionStorage.getItem(
-          "snap2study_image"
-        );
-
-      if (!savedResult) {
-        router.replace("/");
-        return;
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Unable to load analysis."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
-
-      const parsed = JSON.parse(savedResult);
-
-      if (!isValidResult(parsed)) {
-        sessionStorage.removeItem(
-          "snap2study_result"
-        );
-
-        router.replace("/");
-        return;
-      }
-
-      setResult(parsed);
-      setImage(savedImage);
-    } catch (error) {
-      console.error(
-        "[Snap2Study] Failed to load result:",
-        error
-      );
-
-      router.replace("/");
     }
-  }, [router]);
+
+    loadResult();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [historyId, router]);
 
   /* =====================================================
      COPY
@@ -120,7 +224,9 @@ export default function ResultsPage() {
       type: string
     ) => {
       try {
-        await navigator.clipboard.writeText(text);
+        await navigator.clipboard.writeText(
+          text
+        );
 
         setCopied(type);
 
@@ -154,6 +260,19 @@ export default function ResultsPage() {
   };
 
   /* =====================================================
+     BACK
+  ===================================================== */
+
+  const handleBack = () => {
+    if (isHistoryResult) {
+      router.push("/history");
+      return;
+    }
+
+    handleNewQuestion();
+  };
+
+  /* =====================================================
      PRINT
   ===================================================== */
 
@@ -165,10 +284,11 @@ export default function ResultsPage() {
      LOADING
   ===================================================== */
 
-  if (!result) {
+  if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-(--cream)">
         <div className="text-center">
+
           <div className="mono mb-4 text-[9px] font-bold uppercase tracking-[0.2em] text-black/40">
             SNAP2STUDY / RESULT
           </div>
@@ -176,7 +296,90 @@ export default function ResultsPage() {
           <div className="serif text-3xl">
             Loading analysis...
           </div>
+
         </div>
+      </main>
+    );
+  }
+
+  /* =====================================================
+     ERROR
+  ===================================================== */
+
+  if (error || !result) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-(--cream) px-6">
+
+        <div className="w-full max-w-xl border-2 border-black bg-(--paper) p-8 shadow-[6px_6px_0_var(--black)]">
+
+          <div className="mono mb-4 text-[9px] font-bold uppercase tracking-[0.18em] text-black/40">
+            SNAP2STUDY / ERROR
+          </div>
+
+          <h1 className="serif text-4xl">
+            Unable to load analysis.
+          </h1>
+
+          <p className="mt-4 text-sm leading-7 text-black/60">
+            {error ||
+              "This analysis could not be loaded."}
+          </p>
+
+          <div className="mt-7 flex flex-wrap gap-3">
+
+            <button
+              type="button"
+              onClick={() =>
+                router.push("/history")
+              }
+              className="
+                mono
+                border-2
+                border-black
+                bg-(--yellow)
+                px-5
+                py-3
+                text-[9px]
+                font-bold
+                uppercase
+                tracking-[0.12em]
+                shadow-[3px_3px_0_var(--black)]
+                transition-all
+                hover:-translate-x-0.5
+                hover:-translate-y-0.5
+                hover:shadow-[5px_5px_0_var(--black)]
+              "
+            >
+              Back to History
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                router.push("/")
+              }
+              className="
+                mono
+                border-2
+                border-black
+                bg-(--paper)
+                px-5
+                py-3
+                text-[9px]
+                font-bold
+                uppercase
+                tracking-[0.12em]
+                transition-colors
+                hover:bg-white
+              "
+            >
+              Home
+            </button>
+
+          </div>
+
+        </div>
+
       </main>
     );
   }
@@ -189,11 +392,12 @@ export default function ResultsPage() {
       ================================================= */}
 
       <div className="border-b-2 border-black bg-(--cream)">
+
         <div className="container flex min-h-16 items-center justify-between gap-4">
 
           <button
             type="button"
-            onClick={handleNewQuestion}
+            onClick={handleBack}
             className="
               group
               mono
@@ -209,15 +413,23 @@ export default function ResultsPage() {
               hover:-translate-x-1
             "
           >
+
             <span className="text-base transition-transform duration-200 group-hover:-translate-x-1">
               ←
             </span>
 
-            Snap2Study
+            {isHistoryResult
+              ? "History"
+              : "Snap2Study"}
+
           </button>
 
           <div className="mono hidden text-[9px] uppercase tracking-[0.14em] text-black/40 sm:block">
-            ANALYSIS / COMPLETE
+
+            {isHistoryResult
+              ? "HISTORY / VIEWING"
+              : "ANALYSIS / COMPLETE"}
+
           </div>
 
           <button
@@ -255,19 +467,18 @@ export default function ResultsPage() {
       <div className="container">
 
         {/* =================================================
-            HERO / RESULT HEADER
+            HERO
         ================================================= */}
 
         <header className="relative overflow-hidden border-b-2 border-black py-12 sm:py-16 lg:py-20">
 
-          {/* Decorative number */}
-
           <div className="pointer-events-none absolute right-0 top-1/2 hidden -translate-y-1/2 lg:block">
+
             <span className="serif text-[15rem] leading-none text-black/[0.035]">
               01
             </span>
-          </div>
 
+          </div>
 
           <div className="relative z-10 max-w-4xl">
 
@@ -275,10 +486,11 @@ export default function ResultsPage() {
 
               <span className="inline-block h-2 w-2 rounded-full bg-(--coral)" />
 
-              AI ANALYSIS / READY
+              {isHistoryResult
+                ? "SAVED ANALYSIS / READY"
+                : "AI ANALYSIS / READY"}
 
             </div>
-
 
             <h1 className="serif max-w-4xl text-5xl leading-[0.92] tracking-tight sm:text-7xl lg:text-8xl">
 
@@ -291,7 +503,6 @@ export default function ResultsPage() {
               </span>
 
             </h1>
-
 
             <p className="mt-7 max-w-2xl text-base leading-7 text-black/60 sm:text-lg">
 
@@ -311,8 +522,6 @@ export default function ResultsPage() {
 
         <section className="grid border-b-2 border-black sm:grid-cols-3">
 
-          {/* Subject */}
-
           <div className="border-b-2 border-black bg-(--yellow) p-5 sm:border-b-0 sm:border-r-2">
 
             <div className="flex items-start justify-between gap-4">
@@ -328,13 +537,13 @@ export default function ResultsPage() {
             </div>
 
             <div className="mt-3 text-lg font-bold">
-              {result.subject}
+              <AnswerRenderer
+                content={result.subject}
+              />
             </div>
 
           </div>
 
-
-          {/* Topic */}
 
           <div className="border-b-2 border-black bg-(--paper) p-5 sm:border-b-0 sm:border-r-2">
 
@@ -351,13 +560,13 @@ export default function ResultsPage() {
             </div>
 
             <div className="mt-3 text-lg font-bold">
-              {result.topic}
+              <AnswerRenderer
+                content={result.topic}
+              />
             </div>
 
           </div>
 
-
-          {/* Difficulty */}
 
           <div className="bg-(--coral) p-5">
 
@@ -374,7 +583,9 @@ export default function ResultsPage() {
             </div>
 
             <div className="mt-3 text-lg font-bold">
-              {result.difficulty}
+              <AnswerRenderer
+                content={result.difficulty}
+              />
             </div>
 
           </div>
@@ -388,13 +599,7 @@ export default function ResultsPage() {
 
         <div className="relative grid gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_180px] lg:gap-12 lg:py-14">
 
-
-          {/* =================================================
-              MAIN CONTENT
-          ================================================= */}
-
           <div className="min-w-0">
-
 
             {/* =================================================
                 ORIGINAL QUESTION
@@ -438,13 +643,13 @@ export default function ResultsPage() {
 
                   </div>
 
-
                   <span className="mono flex h-7 w-7 items-center justify-center border-2 border-black text-sm">
-                    {showOriginal ? "−" : "+"}
+                    {showOriginal
+                      ? "−"
+                      : "+"}
                   </span>
 
                 </button>
-
 
                 {showOriginal && (
                   <div className="p-4">
@@ -495,7 +700,6 @@ export default function ResultsPage() {
 
                 </div>
 
-
                 <button
                   type="button"
                   onClick={() =>
@@ -528,13 +732,14 @@ export default function ResultsPage() {
 
               </div>
 
-
               <div className="p-6 sm:p-8">
 
                 <div className="border-l-4 border-(--coral) pl-5 text-lg leading-8 sm:text-xl">
 
                   <AnswerRenderer
-                    content={result.question}
+                    content={
+                      result.question
+                    }
                   />
 
                 </div>
@@ -548,14 +753,14 @@ export default function ResultsPage() {
                 FINAL ANSWER
             ================================================= */}
 
-            <section id="answer-section" className="relative mb-8 overflow-hidden border-2 border-black bg-(--black)/69 text-(--cream) shadow-[8px_8px_0_var(--coral)]">
-
-              {/* Decorative background */}
+            <section
+              id="answer-section"
+              className="relative mb-8 overflow-hidden border-2 border-black bg-(--black)/69 text-(--cream) shadow-[8px_8px_0_var(--coral)]"
+            >
 
               <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full border border-white/10" />
 
               <div className="pointer-events-none absolute -right-2 -top-2 h-20 w-20 rounded-full border border-white/10" />
-
 
               <div className="relative z-10 border-b border-white/15 px-6 py-5">
 
@@ -572,7 +777,6 @@ export default function ResultsPage() {
                     </h2>
 
                   </div>
-
 
                   <button
                     type="button"
@@ -608,19 +812,19 @@ export default function ResultsPage() {
 
               </div>
 
-
               <div className="relative z-10 p-7 sm:p-10">
 
                 <div className="serif max-w-3xl text-3xl leading-[1.35] sm:text-4xl lg:text-5xl">
 
                   <AnswerRenderer
-                    content={result.answer}
+                    content={
+                      result.answer
+                    }
                   />
 
                 </div>
 
               </div>
-
 
               <div className="relative z-10 border-t border-white/15 px-6 py-4">
 
@@ -628,7 +832,9 @@ export default function ResultsPage() {
 
                   <span className="inline-block h-1.5 w-1.5 rounded-full bg-(--coral)" />
 
-                  Answer generated from your question
+                  {isHistoryResult
+                    ? "Loaded from your study history"
+                    : "Answer generated from your question"}
 
                 </div>
 
@@ -656,7 +862,6 @@ export default function ResultsPage() {
                   </h2>
 
                 </div>
-
 
                 <button
                   type="button"
@@ -691,7 +896,6 @@ export default function ResultsPage() {
 
               </div>
 
-
               <div className="p-6 sm:p-8">
 
                 <div className="relative border-l-2 border-black/15 pl-6 sm:pl-8">
@@ -701,7 +905,9 @@ export default function ResultsPage() {
                   <div className="text-base leading-8 sm:text-[17px]">
 
                     <AnswerRenderer
-                      content={result.explanation}
+                      content={
+                        result.explanation
+                      }
                     />
 
                   </div>
@@ -717,7 +923,10 @@ export default function ResultsPage() {
                 KEY POINTS
             ================================================= */}
 
-            <section id="revision-section" className="mb-8 border-2 border-black bg-(--paper)">
+            <section
+              id="revision-section"
+              className="mb-8 border-2 border-black bg-(--paper)"
+            >
 
               <button
                 type="button"
@@ -752,15 +961,15 @@ export default function ResultsPage() {
 
                 </div>
 
-
                 <span className="mono flex h-8 w-8 items-center justify-center border-2 border-black text-sm">
 
-                  {showKeyPoints ? "−" : "+"}
+                  {showKeyPoints
+                    ? "−"
+                    : "+"}
 
                 </span>
 
               </button>
-
 
               {showKeyPoints && (
                 <div className="border-t-2 border-black">
@@ -800,11 +1009,13 @@ export default function ResultsPage() {
                           ">
                             {String(
                               index + 1
-                            ).padStart(2, "0")}
+                            ).padStart(
+                              2,
+                              "0"
+                            )}
                           </span>
 
                         </div>
-
 
                         <div className="min-w-0 flex-1 pt-0.5 text-sm leading-7">
 
@@ -828,7 +1039,10 @@ export default function ResultsPage() {
                 PRACTICE
             ================================================= */}
 
-            <section id="practice-section" className="mb-8 overflow-hidden border-2 border-black bg-(--yellow)">
+            <section
+              id="practice-section"
+              className="mb-8 overflow-hidden border-2 border-black bg-(--yellow)"
+            >
 
               <div className="p-6 sm:p-8">
 
@@ -850,7 +1064,6 @@ export default function ResultsPage() {
                     </p>
 
                   </div>
-
 
                   <button
                     type="button"
@@ -886,7 +1099,6 @@ export default function ResultsPage() {
 
               </div>
 
-
               {showPractice && (
                 <div className="border-t-2 border-black bg-(--paper) p-6 sm:p-8">
 
@@ -901,7 +1113,6 @@ export default function ResultsPage() {
                     </span>
 
                   </div>
-
 
                   <div className="border-l-4 border-(--coral) pl-5 text-base leading-8 sm:text-lg">
 
@@ -944,7 +1155,6 @@ export default function ResultsPage() {
 
                 </div>
 
-
                 <button
                   type="button"
                   onClick={handleNewQuestion}
@@ -970,9 +1180,11 @@ export default function ResultsPage() {
                   "
                 >
                   Solve Another
+
                   <span className="text-base">
                     →
                   </span>
+
                 </button>
 
               </div>
@@ -993,7 +1205,6 @@ export default function ResultsPage() {
               <div className="mono mb-3 text-[8px] font-bold uppercase tracking-[0.16em] text-black/40">
                 QUICK ACTIONS
               </div>
-
 
               <div className="border-2 border-black bg-(--paper)">
 
@@ -1019,19 +1230,22 @@ export default function ResultsPage() {
                     hover:bg-(--yellow)
                   "
                 >
+
                   <span className="mono text-[9px] font-bold uppercase tracking-wider">
                     Top
                   </span>
 
                   <span>↑</span>
-                </button>
 
+                </button>
 
                 <button
                   type="button"
                   onClick={() =>
                     document
-                      .getElementById("answer-section")
+                      .getElementById(
+                        "answer-section"
+                      )
                       ?.scrollIntoView({
                         behavior: "smooth",
                       })
@@ -1050,19 +1264,22 @@ export default function ResultsPage() {
                     hover:bg-(--coral)
                   "
                 >
+
                   <span className="mono text-[9px] font-bold uppercase tracking-wider">
                     Answer
                   </span>
 
                   <span>→</span>
-                </button>
 
+                </button>
 
                 <button
                   type="button"
                   onClick={() =>
                     document
-                      .getElementById("revision-section")
+                      .getElementById(
+                        "revision-section"
+                      )
                       ?.scrollIntoView({
                         behavior: "smooth",
                       })
@@ -1081,19 +1298,22 @@ export default function ResultsPage() {
                     hover:bg-(--yellow)
                   "
                 >
+
                   <span className="mono text-[9px] font-bold uppercase tracking-wider">
                     Revision
                   </span>
 
                   <span>→</span>
-                </button>
 
+                </button>
 
                 <button
                   type="button"
                   onClick={() =>
                     document
-                      .getElementById("practice-section")
+                      .getElementById(
+                        "practice-section"
+                      )
                       ?.scrollIntoView({
                         behavior: "smooth",
                       })
@@ -1110,11 +1330,13 @@ export default function ResultsPage() {
                     hover:bg-(--coral)
                   "
                 >
+
                   <span className="mono text-[9px] font-bold uppercase tracking-wider">
                     Practice
                   </span>
 
                   <span>→</span>
+
                 </button>
 
               </div>
@@ -1130,6 +1352,7 @@ export default function ResultsPage() {
 
                   <div className="flex items-center gap-2">
                     <span className="h-1.5 w-1.5 rounded-full bg-(--coral)" />
+
                     <span className="mono text-[8px] uppercase tracking-wider">
                       Question
                     </span>
@@ -1137,6 +1360,7 @@ export default function ResultsPage() {
 
                   <div className="flex items-center gap-2">
                     <span className="h-1.5 w-1.5 rounded-full bg-(--coral)" />
+
                     <span className="mono text-[8px] uppercase tracking-wider">
                       Solution
                     </span>
@@ -1144,6 +1368,7 @@ export default function ResultsPage() {
 
                   <div className="flex items-center gap-2">
                     <span className="h-1.5 w-1.5 rounded-full bg-(--coral)" />
+
                     <span className="mono text-[8px] uppercase tracking-wider">
                       Revision
                     </span>
@@ -1181,13 +1406,6 @@ export default function ResultsPage() {
         </footer>
 
       </div>
-
-
-      {/* =====================================================
-          PRINT STYLES
-      ===================================================== */}
-
-      
 
     </main>
   );

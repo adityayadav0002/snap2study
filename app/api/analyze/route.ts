@@ -1,31 +1,8 @@
 import { NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { getCurrentUser } from "@/lib/auth";
+import clientPromise from "@/lib/db";
 
-/**
- * =========================================================
- * SNAP2STUDY ANALYZE API
- * =========================================================
- *
- * Provider priority:
- *
- * 1. OpenRouter Account 2
- *    → NVIDIA Nemotron
- *
- * 2. Groq Account 1
- *    → Qwen 3.8 27B
- *
- * 3. Groq Account 2
- *    → Qwen 3.6 27B
- *
- * IMPORTANT:
- * - No OpenRouter Account 1
- * - No Gemma
- * - No openrouter/free
- * - Nemotron has a SHORT timeout
- * - Groq is used immediately if Nemotron fails
- * - Rate limiter returns an object, NOT a Response
- * =========================================================
- */
 
 const OPENROUTER_URL =
   "https://openrouter.ai/api/v1/chat/completions";
@@ -33,11 +10,11 @@ const OPENROUTER_URL =
 const GROQ_URL =
   "https://api.groq.com/openai/v1/chat/completions";
 
-/**
- * =========================================================
- * MODELS
- * =========================================================
- */
+const DB_NAME = "snap2study";
+
+/* =========================================================
+   MODELS
+========================================================= */
 
 const NEMOTRON_MODEL =
   "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free";
@@ -48,41 +25,17 @@ const GROQ_MODEL_1 =
 const GROQ_MODEL_2 =
   "qwen/qwen3.6-27b";
 
-/**
- * =========================================================
- * TIMEOUTS
- * =========================================================
- *
- * IMPORTANT:
- *
- * Your frontend is currently aborting at around 60 seconds.
- *
- * Therefore the server MUST NOT wait that long for Nemotron.
- *
- * Nemotron gets 12 seconds.
- *
- * If it does not finish:
- *
- * Nemotron
- *    ↓
- * Groq Account 1
- *
- * If Groq 1 fails:
- *
- * Groq Account 2
- */
+/* =========================================================
+   TIMEOUTS
+========================================================= */
 
 const NEMOTRON_TIMEOUT_MS = 12_000;
-
 const GROQ_TIMEOUT_MS = 20_000;
-
 const FALLBACK_DELAY_MS = 100;
 
-/**
- * =========================================================
- * TYPES
- * =========================================================
- */
+/* =========================================================
+   TYPES
+========================================================= */
 
 type AnalysisResult = {
   question: string;
@@ -102,11 +55,9 @@ type ProviderName =
   | "Groq Account 4"
   | "OpenRouter";
 
-/**
- * =========================================================
- * SYSTEM PROMPT
- * =========================================================
- */
+/* =========================================================
+   SYSTEM PROMPT
+========================================================= */
 
 const systemPrompt = `
 You are Snap2Study, an advanced educational AI solver.
@@ -263,37 +214,7 @@ $$
 ...
 $$
 
-Examples:
-
-$F_{\\mathrm{net}}$
-
-$10\\,\\mathrm{N}$
-
-$60^\\circ$
-
-$\\frac{a}{b}$
-
-$\\sqrt{x}$
-
-$\\sin x$
-
-$\\cos x$
-
-$\\tan x$
-
-Correct:
-
-$$
-F_{\\mathrm{net}} = F - f
-$$
-
-$$
-a = \\frac{F_{\\mathrm{net}}}{m}
-$$
-
-$$
-\\boxed{a = 2\\,\\mathrm{m/s^2}}
-$$
+Use valid LaTeX for mathematical expressions.
 
 Never output malformed LaTeX.
 
@@ -328,20 +249,6 @@ Preserve:
 - Reaction equations
 - Oxidation states
 - Units
-
-Examples:
-
-$H_2O$
-
-$CO_2$
-
-$Na^+$
-
-$SO_4^{2-}$
-
-$Fe^{3+}$
-
-$2H_2 + O_2 \\rightarrow 2H_2O$
 
 Balance equations when required.
 
@@ -482,11 +389,9 @@ Verify:
 RETURN ONLY THE JSON OBJECT.
 `;
 
-/**
- * =========================================================
- * ERROR HELPERS
- * =========================================================
- */
+/* =========================================================
+   ERROR HELPERS
+========================================================= */
 
 function getErrorMessage(data: any): string {
   return (
@@ -505,11 +410,9 @@ function isProviderError(data: any): boolean {
   );
 }
 
-/**
- * =========================================================
- * FETCH WITH TIMEOUT
- * =========================================================
- */
+/* =========================================================
+   FETCH WITH TIMEOUT
+========================================================= */
 
 async function fetchWithTimeout(
   url: string,
@@ -532,11 +435,9 @@ async function fetchWithTimeout(
   }
 }
 
-/**
- * =========================================================
- * WAIT
- * =========================================================
- */
+/* =========================================================
+   WAIT
+========================================================= */
 
 async function wait(ms: number): Promise<void> {
   if (ms <= 0) return;
@@ -546,11 +447,11 @@ async function wait(ms: number): Promise<void> {
   });
 }
 
-/**
- * =========================================================
- * IMAGE VALIDATION
- * =========================================================
- */
+
+
+/* =========================================================
+   IMAGE VALIDATION
+========================================================= */
 
 function validateImage(image: unknown): {
   valid: boolean;
@@ -572,9 +473,6 @@ function validateImage(image: unknown): {
     };
   }
 
-  /**
-   * Application-level encoded string limit.
-   */
   const MAX_IMAGE_STRING_LENGTH =
     20 * 1024 * 1024;
 
@@ -652,28 +550,20 @@ function validateImage(image: unknown): {
   };
 }
 
-/**
- * =========================================================
- * CLEAN AI CONTENT
- * =========================================================
- */
+/* =========================================================
+   CLEAN AI CONTENT
+========================================================= */
 
 function cleanAIContent(
   content: string
 ): string {
   let cleaned = content.trim();
 
-  /**
-   * Remove <think>...</think>
-   */
   cleaned = cleaned.replace(
     /<think>[\s\S]*?<\/think>/gi,
     ""
   );
 
-  /**
-   * Remove markdown fences.
-   */
   cleaned = cleaned.replace(
     /^```json\s*/i,
     ""
@@ -691,9 +581,6 @@ function cleanAIContent(
 
   cleaned = cleaned.trim();
 
-  /**
-   * Extract the JSON object.
-   */
   const firstBrace =
     cleaned.indexOf("{");
 
@@ -714,11 +601,9 @@ function cleanAIContent(
   return cleaned.trim();
 }
 
-/**
- * =========================================================
- * NORMALIZE RESULT
- * =========================================================
- */
+/* =========================================================
+   NORMALIZE RESULT
+========================================================= */
 
 function validateAndNormalize(
   raw: any
@@ -779,37 +664,41 @@ function validateAndNormalize(
     return null;
   }
 
-  /**
-   * key_points
-   */
   let keyPoints: string[] = [];
 
-  if (Array.isArray(raw.key_points)) {
-    keyPoints = raw.key_points
-      .map((point: unknown) => {
-        if (
-          typeof point === "string"
-        ) {
-          return point.trim();
-        }
-
-        if (
-          typeof point === "object" &&
-          point !== null
-        ) {
-          const values =
-            Object.values(point);
-
-          if (values.length > 0) {
-            return String(
-              values[0]
-            ).trim();
+  if (
+    Array.isArray(
+      raw.key_points
+    )
+  ) {
+    keyPoints =
+      raw.key_points
+        .map((point: unknown) => {
+          if (
+            typeof point === "string"
+          ) {
+            return point.trim();
           }
-        }
 
-        return "";
-      })
-      .filter(Boolean);
+          if (
+            typeof point === "object" &&
+            point !== null
+          ) {
+            const values =
+              Object.values(point);
+
+            if (
+              values.length > 0
+            ) {
+              return String(
+                values[0]
+              ).trim();
+            }
+          }
+
+          return "";
+        })
+        .filter(Boolean);
   }
 
   if (keyPoints.length < 3) {
@@ -820,9 +709,6 @@ function validateAndNormalize(
     new Set(keyPoints)
   ).slice(0, 6);
 
-  /**
-   * Obvious failure responses.
-   */
   const failurePatterns = [
     /^i cannot/i,
     /^i can't/i,
@@ -849,9 +735,6 @@ function validateAndNormalize(
     }
   }
 
-  /**
-   * Suspicious placeholders.
-   */
   const combinedText = [
     question,
     answer,
@@ -891,14 +774,6 @@ function validateAndNormalize(
     return null;
   }
 
-  /**
-   * Basic LaTeX sanity.
-   *
-   * We intentionally do NOT reject normal "$"
-   * characters aggressively because that can cause
-   * valid responses to be rejected unnecessarily.
-   */
-
   const mathFields = [
     question,
     answer,
@@ -910,9 +785,6 @@ function validateAndNormalize(
   for (
     const field of mathFields
   ) {
-    /**
-     * Obvious malformed \frac
-     */
     if (
       /\\frac\s+[^{}\s]+\s+[^{}\s]+/.test(
         field
@@ -921,9 +793,6 @@ function validateAndNormalize(
       return null;
     }
 
-    /**
-     * Obvious malformed \sqrt
-     */
     if (
       /\\sqrt\s+[A-Za-z0-9]/.test(
         field
@@ -954,17 +823,9 @@ function validateAndNormalize(
   };
 }
 
-/**
- * =========================================================
- * QUESTION COUNT
- * =========================================================
- *
- * This is intentionally simple.
- *
- * The previous regex was overly complicated and could
- * incorrectly count content.
- * =========================================================
- */
+/* =========================================================
+   QUESTION COUNT
+========================================================= */
 
 function getQuestionCount(
   text: string
@@ -977,7 +838,7 @@ function getQuestionCount(
 
   const matches =
     value.match(
-      /(?:^|\n)\s*(?:Q(?:uestion)?\s*)?\d+\s*[\.\):]/gi
+      /(?:^|\n)\s*(?:Q(?:uestion)?\s*)?\d+\s*[.):]/gi
     );
 
   if (
@@ -990,11 +851,9 @@ function getQuestionCount(
   return 1;
 }
 
-/**
- * =========================================================
- * BUILD REQUEST BODY
- * =========================================================
- */
+/* =========================================================
+   BUILD REQUEST BODY
+========================================================= */
 
 function buildRequestBody(
   model: string,
@@ -1038,11 +897,80 @@ function buildRequestBody(
   };
 }
 
-/**
- * =========================================================
- * PROVIDER REQUEST
- * =========================================================
- */
+/* =========================================================
+   SAVE TO HISTORY
+========================================================= */
+
+async function saveAnalysisToHistory(
+  userId: string,
+  result: AnalysisResult,
+  provider: string,
+  model: string
+): Promise<void> {
+  try {
+    const client =
+      await clientPromise;
+
+    const db =
+      client.db(DB_NAME);
+
+    await db
+      .collection("history")
+      .insertOne({
+        userId,
+
+        question:
+          result.question,
+
+        subject:
+          result.subject,
+
+        topic:
+          result.topic,
+
+        difficulty:
+          result.difficulty,
+
+        answer:
+          result.answer,
+
+        explanation:
+          result.explanation,
+
+        key_points:
+          result.key_points,
+
+        similar_question:
+          result.similar_question,
+
+        provider,
+
+        model,
+
+        createdAt:
+          new Date(),
+      });
+
+    console.log(
+      "[Snap2Study] Analysis saved to history."
+    );
+  } catch (error) {
+    /*
+     * IMPORTANT:
+     *
+     * History failure must NOT make a successful
+     * AI analysis fail.
+     */
+    console.error(
+      "[Snap2Study] Failed to save analysis to history:",
+      error
+    );
+  }
+}
+
+/* =========================================================
+   PROVIDER REQUEST
+========================================================= */
 
 async function requestProvider(
   provider: ProviderName,
@@ -1083,7 +1011,7 @@ async function requestProvider(
               "application/json",
 
             "HTTP-Referer":
-              "http://localhost:3000",
+              "https://snap2study.vercel.app",
 
             "X-Title":
               "Snap2Study",
@@ -1128,9 +1056,6 @@ async function requestProvider(
       }`
     );
 
-    /**
-     * HTTP 200 can still contain provider error.
-     */
     if (isProviderError(data)) {
       const errorMessage =
         getErrorMessage(data);
@@ -1146,9 +1071,6 @@ async function requestProvider(
       };
     }
 
-    /**
-     * HTTP error.
-     */
     if (!response.ok) {
       const errorMessage =
         getErrorMessage(data);
@@ -1193,9 +1115,6 @@ async function requestProvider(
       }`
     );
 
-    /**
-     * Output truncation.
-     */
     if (
       finishReason === "length" ||
       nativeFinishReason === "length"
@@ -1283,9 +1202,10 @@ async function requestProvider(
       };
     }
 
-    /**
-     * Question-count sanity check.
-     */
+    /* =====================================================
+       QUESTION COUNT CHECK
+    ===================================================== */
+
     const detectedQuestionCount =
       getQuestionCount(
         result.question
@@ -1390,11 +1310,9 @@ async function requestProvider(
   }
 }
 
-/**
- * =========================================================
- * POST
- * =========================================================
- */
+/* =========================================================
+   POST
+========================================================= */
 
 export async function POST(
   request: Request
@@ -1404,11 +1322,9 @@ export async function POST(
   );
 
   try {
-    /**
-     * =======================================================
-     * 1. METHOD
-     * =======================================================
-     */
+    /* =====================================================
+       1. METHOD
+    ===================================================== */
 
     if (
       request.method !== "POST"
@@ -1427,28 +1343,9 @@ export async function POST(
       );
     }
 
-    /**
-     * =======================================================
-     * 2. RATE LIMIT
-     * =======================================================
-     *
-     * IMPORTANT:
-     *
-     * checkRateLimit() expects a STRING.
-     *
-     * It does NOT return a Response.
-     *
-     * Therefore we must inspect:
-     *
-     * {
-     *   allowed,
-     *   remaining,
-     *   resetAt
-     * }
-     *
-     * and create NextResponse ourselves.
-     * =======================================================
-     */
+    /* =====================================================
+       2. RATE LIMIT
+    ===================================================== */
 
     const forwardedFor =
       request.headers.get(
@@ -1510,11 +1407,9 @@ export async function POST(
       );
     }
 
-    /**
-     * =======================================================
-     * 3. CONTENT TYPE
-     * =======================================================
-     */
+    /* =====================================================
+       3. CONTENT TYPE
+    ===================================================== */
 
     const contentType =
       request.headers.get(
@@ -1539,11 +1434,9 @@ export async function POST(
       );
     }
 
-    /**
-     * =======================================================
-     * 4. READ BODY
-     * =======================================================
-     */
+    /* =====================================================
+       4. BODY
+    ===================================================== */
 
     let body: any;
 
@@ -1562,11 +1455,9 @@ export async function POST(
       );
     }
 
-    /**
-     * =======================================================
-     * 5. VALIDATE IMAGE
-     * =======================================================
-     */
+    /* =====================================================
+       5. IMAGE
+    ===================================================== */
 
     const image =
       body?.image;
@@ -1592,68 +1483,90 @@ export async function POST(
     const imageString =
       image as string;
 
-    /**
-     * =======================================================
-     * 6. API KEYS
-     * =======================================================
-     */
- 
-    const groqKey1 =
-      process.env
-        .GROQ_API_KEY_1;
+   /* =====================================================
+   6. AUTHENTICATION
+===================================================== */
 
-    const groqKey2 =
-      process.env
-        .GROQ_API_KEY_2;
+const currentUser = await getCurrentUser();
 
-    const groqKey3 =
-  process.env
-    .GROQ_API_KEY_3;
+if (!currentUser) {
+  console.log(
+    "[Snap2Study] Analysis rejected: user not authenticated."
+  );
 
-const groqKey4 =
-  process.env
-    .GROQ_API_KEY_4;
+  return NextResponse.json(
+    {
+      error:
+        "You must be logged in to analyze a question.",
+      code: "AUTH_REQUIRED",
+    },
+    {
+      status: 401,
+    }
+  );
+}
 
-    const openRouterKey =
-      process.env
-        .OPENROUTER_API_KEY_2;
-
-
-   console.log(
-  "[Snap2Study] Providers available:",
-  {
-    
-
-    groqAccount1:
-      Boolean(groqKey1),
-
-    groqAccount2:
-      Boolean(groqKey2),
-
-    groqAccount3:
-      Boolean(groqKey3),
-
-    groqAccount4:
-      Boolean(groqKey4),
-
-      openRouterAccount2:
-      Boolean(openRouterKey),
-  }
+console.log(
+  `[Snap2Study] Authenticated user: ${currentUser.email}`
 );
 
-    /**
-     * =======================================================
-     * 7. AT LEAST ONE PROVIDER
-     * =======================================================
-     */
+
+const authenticatedUser = currentUser;
+
+console.log(
+  `[Snap2Study] Authenticated user: ${authenticatedUser.email}`
+);
+
+    /* =====================================================
+       7. API KEYS
+    ===================================================== */
+
+    const groqKey1 =
+      process.env.GROQ_API_KEY_1;
+
+    const groqKey2 =
+      process.env.GROQ_API_KEY_2;
+
+    const groqKey3 =
+      process.env.GROQ_API_KEY_3;
+
+    const groqKey4 =
+      process.env.GROQ_API_KEY_4;
+
+    const openRouterKey =
+      process.env.OPENROUTER_API_KEY_2;
+
+    console.log(
+      "[Snap2Study] Providers available:",
+      {
+        groqAccount1:
+          Boolean(groqKey1),
+
+        groqAccount2:
+          Boolean(groqKey2),
+
+        groqAccount3:
+          Boolean(groqKey3),
+
+        groqAccount4:
+          Boolean(groqKey4),
+
+        openRouterAccount2:
+          Boolean(openRouterKey),
+      }
+    );
+
+    /* =====================================================
+       8. AT LEAST ONE PROVIDER
+    ===================================================== */
 
     if (
-  !groqKey1 &&
-  !groqKey2 &&
-  !groqKey3 &&
-  !groqKey4 &&
-  !openRouterKey
-) {
+      !groqKey1 &&
+      !groqKey2 &&
+      !groqKey3 &&
+      !groqKey4 &&
+      !openRouterKey
+    ) {
       console.error(
         "[Snap2Study] No AI provider keys configured."
       );
@@ -1672,13 +1585,46 @@ const groqKey4 =
     const failures: string[] =
       [];
 
+    /* =====================================================
+       HELPER: RETURN SUCCESS + SAVE HISTORY
+    ===================================================== */
 
-    /**
-     * =======================================================
-     * PROVIDER 1
-     * GROQ ACCOUNT 1
-     * =======================================================
-     */
+    async function handleSuccess(
+  result: {
+    success: true;
+    result: AnalysisResult;
+    model: string;
+    provider: string;
+  }
+) {
+  await saveAnalysisToHistory(
+    authenticatedUser._id.toString(),
+    result.result,
+    result.provider,
+    result.model
+  );
+
+  return NextResponse.json(
+    result.result,
+    {
+      status: 200,
+      headers: {
+        "X-Snap2Study-Provider":
+          result.provider,
+
+        "X-Snap2Study-Model":
+          result.model,
+
+        "X-RateLimit-Remaining":
+          String(rateLimit.remaining),
+      },
+    }
+  );
+}
+
+    /* =====================================================
+       9. GROQ ACCOUNT 1
+    ===================================================== */
 
     if (groqKey1) {
       const result =
@@ -1694,21 +1640,8 @@ const groqKey4 =
       if (
         result.success
       ) {
-        return NextResponse.json(
-          result.result,
-          {
-            status: 200,
-            headers: {
-              "X-Snap2Study-Provider":
-                "Groq Account 1",
-              "X-Snap2Study-Model":
-                GROQ_MODEL_1,
-              "X-RateLimit-Remaining":
-                String(
-                  rateLimit.remaining
-                ),
-            },
-          }
+        return handleSuccess(
+          result
         );
       }
 
@@ -1716,10 +1649,6 @@ const groqKey4 =
         `Groq Account 1: ${result.reason}`
       );
     } else {
-      console.error(
-        "[Snap2Study] GROQ_API_KEY_1 missing."
-      );
-
       failures.push(
         "Groq Account 1: API key missing"
       );
@@ -1729,12 +1658,9 @@ const groqKey4 =
       FALLBACK_DELAY_MS
     );
 
-    /**
-     * =======================================================
-     * PROVIDER 2
-     * GROQ ACCOUNT 2
-     * =======================================================
-     */
+    /* =====================================================
+       10. GROQ ACCOUNT 2
+    ===================================================== */
 
     if (groqKey2) {
       const result =
@@ -1750,21 +1676,8 @@ const groqKey4 =
       if (
         result.success
       ) {
-        return NextResponse.json(
-          result.result,
-          {
-            status: 200,
-            headers: {
-              "X-Snap2Study-Provider":
-                "Groq Account 2",
-              "X-Snap2Study-Model":
-                GROQ_MODEL_2,
-              "X-RateLimit-Remaining":
-                String(
-                  rateLimit.remaining
-                ),
-            },
-          }
+        return handleSuccess(
+          result
         );
       }
 
@@ -1772,142 +1685,90 @@ const groqKey4 =
         `Groq Account 2: ${result.reason}`
       );
     } else {
-      console.error(
-        "[Snap2Study] GROQ_API_KEY_2 missing."
-      );
-
       failures.push(
         "Groq Account 2: API key missing"
       );
     }
 
     await wait(
-  FALLBACK_DELAY_MS
-);
-
-/**
- * =======================================================
- * PROVIDER 3
- * GROQ ACCOUNT 3
- * =======================================================
- */
-
-if (groqKey3) {
-  const result =
-    await requestProvider(
-      "Groq Account 3",
-      GROQ_URL,
-      groqKey3,
-      GROQ_MODEL_1,
-      imageString,
-      GROQ_TIMEOUT_MS
+      FALLBACK_DELAY_MS
     );
 
-  if (
-    result.success
-  ) {
-    return NextResponse.json(
-      result.result,
-      {
-        status: 200,
-        headers: {
-          "X-Snap2Study-Provider":
-            "Groq Account 3",
-          "X-Snap2Study-Model":
-            GROQ_MODEL_1,
-          "X-RateLimit-Remaining":
-            String(
-              rateLimit.remaining
-            ),
-        },
+    /* =====================================================
+       11. GROQ ACCOUNT 3
+    ===================================================== */
+
+    if (groqKey3) {
+      const result =
+        await requestProvider(
+          "Groq Account 3",
+          GROQ_URL,
+          groqKey3,
+          GROQ_MODEL_1,
+          imageString,
+          GROQ_TIMEOUT_MS
+        );
+
+      if (
+        result.success
+      ) {
+        return handleSuccess(
+          result
+        );
       }
-    );
-  }
 
-  failures.push(
-    `Groq Account 3: ${result.reason}`
-  );
-} else {
-  console.error(
-    "[Snap2Study] GROQ_API_KEY_3 missing."
-  );
-
-  failures.push(
-    "Groq Account 3: API key missing"
-  );
-}
-
-await wait(
-  FALLBACK_DELAY_MS
-);
-
-/**
- * =======================================================
- * PROVIDER 4
- * GROQ ACCOUNT 4
- * =======================================================
- */
-
-if (groqKey4) {
-  const result =
-    await requestProvider(
-      "Groq Account 4",
-      GROQ_URL,
-      groqKey4,
-      GROQ_MODEL_2,
-      imageString,
-      GROQ_TIMEOUT_MS
-    );
-
-  if (
-    result.success
-  ) {
-    return NextResponse.json(
-      result.result,
-      {
-        status: 200,
-        headers: {
-          "X-Snap2Study-Provider":
-            "Groq Account 4",
-          "X-Snap2Study-Model":
-            GROQ_MODEL_2,
-          "X-RateLimit-Remaining":
-            String(
-              rateLimit.remaining
-            ),
-        },
-      }
-    );
-  }
-
-  failures.push(
-    `Groq Account 4: ${result.reason}`
-  );
-} else {
-  console.error(
-    "[Snap2Study] GROQ_API_KEY_4 missing."
-  );
-
-  failures.push(
-    "Groq Account 4: API key missing"
-  );
-}
-
-
-    /**
-     * Very short delay.
-     */
+      failures.push(
+        `Groq Account 3: ${result.reason}`
+      );
+    } else {
+      failures.push(
+        "Groq Account 3: API key missing"
+      );
+    }
 
     await wait(
       FALLBACK_DELAY_MS
     );
 
-/**
-     * =======================================================
-     * PROVIDER 5
-     * OPENROUTER → NEMOTRON
-     * =======================================================
-     */
+    /* =====================================================
+       12. GROQ ACCOUNT 4
+    ===================================================== */
+
+    if (groqKey4) {
+      const result =
+        await requestProvider(
+          "Groq Account 4",
+          GROQ_URL,
+          groqKey4,
+          GROQ_MODEL_2,
+          imageString,
+          GROQ_TIMEOUT_MS
+        );
+
+      if (
+        result.success
+      ) {
+        return handleSuccess(
+          result
+        );
+      }
+
+      failures.push(
+        `Groq Account 4: ${result.reason}`
+      );
+    } else {
+      failures.push(
+        "Groq Account 4: API key missing"
+      );
+    }
+
+    await wait(
+      FALLBACK_DELAY_MS
+    );
+
+    /* =====================================================
+       13. OPENROUTER → NEMOTRON
+    ===================================================== */
 
     if (openRouterKey) {
       const result =
@@ -1923,21 +1784,8 @@ if (groqKey4) {
       if (
         result.success
       ) {
-        return NextResponse.json(
-          result.result,
-          {
-            status: 200,
-            headers: {
-              "X-Snap2Study-Provider":
-                "OpenRouter",
-              "X-Snap2Study-Model":
-                NEMOTRON_MODEL,
-              "X-RateLimit-Remaining":
-                String(
-                  rateLimit.remaining
-                ),
-            },
-          }
+        return handleSuccess(
+          result
         );
       }
 
@@ -1945,21 +1793,14 @@ if (groqKey4) {
         `OpenRouter Nemotron: ${result.reason}`
       );
     } else {
-      console.error(
-        "[Snap2Study] OPENROUTER_API_KEY_2 missing."
-      );
-
       failures.push(
         "OpenRouter Nemotron: API key missing"
       );
     }
 
-
-    /**
-     * =======================================================
-     * ALL PROVIDERS FAILED
-     * =======================================================
-     */
+    /* =====================================================
+       14. ALL PROVIDERS FAILED
+    ===================================================== */
 
     console.error(
       "[Snap2Study] All AI providers failed."
@@ -1977,6 +1818,7 @@ if (groqKey4) {
       },
       {
         status: 503,
+
         headers: {
           "X-RateLimit-Remaining":
             String(
