@@ -5,26 +5,17 @@ const DB_NAME = "snap2study";
 
 export type AnalysisHistory = {
   userId: string;
-
   question: string;
   subject: string;
   topic: string;
   difficulty: string;
-
   answer: string;
   explanation: string;
-
   key_points: string[];
-
   similar_question: string;
-
   createdAt: Date;
   updatedAt: Date;
 };
-
-/* =========================================================
-   SAVE ANALYSIS
-========================================================= */
 
 export async function saveAnalysis(
   userId: string,
@@ -40,20 +31,12 @@ export async function saveAnalysis(
   }
 ) {
   if (!ObjectId.isValid(userId)) {
-    throw new Error(
-      "Invalid user ID."
-    );
+    throw new Error( "Invalid user ID." );
   }
 
-  const client =
-    await clientPromise;
-
-  const db =
-    client.db(DB_NAME);
-
-  const now =
-    new Date();
-
+  const client = await clientPromise;
+  const db = client.db(DB_NAME);
+  const now = new Date();
   const result =
     await db
       .collection<AnalysisHistory>(
@@ -61,60 +44,29 @@ export async function saveAnalysis(
       )
       .insertOne({
         userId,
-
-        question:
-          data.question,
-
-        subject:
-          data.subject,
-
-        topic:
-          data.topic,
-
-        difficulty:
-          data.difficulty,
-
-        answer:
-          data.answer,
-
-        explanation:
-          data.explanation,
-
-        key_points:
-          data.key_points,
-
-        similar_question:
-          data.similar_question,
-
-        createdAt:
-          now,
-
-        updatedAt:
-          now,
+        question: data.question,
+        subject: data.subject,
+        topic: data.topic,
+        difficulty: data.difficulty,
+        answer: data.answer,
+        explanation: data.explanation,
+        key_points: data.key_points,
+        similar_question: data.similar_question,
+        createdAt: now,
+        updatedAt: now,
       });
-
   return result.insertedId;
 }
-
-/* =========================================================
-   GET USER HISTORY
-========================================================= */
 
 export async function getUserHistory(
   userId: string
 ) {
   if (!ObjectId.isValid(userId)) {
-    throw new Error(
-      "Invalid user ID."
-    );
+    throw new Error( "Invalid user ID.");
   }
 
-  const client =
-    await clientPromise;
-
-  const db =
-    client.db(DB_NAME);
-
+  const client = await clientPromise;
+  const db = client.db(DB_NAME);
   return db
     .collection<AnalysisHistory>(
       "analyses"
@@ -128,10 +80,6 @@ export async function getUserHistory(
     .toArray();
 }
 
-/* =========================================================
-   GET SINGLE ANALYSIS
-========================================================= */
-
 export async function getUserAnalysis(
   userId: string,
   analysisId: string
@@ -143,12 +91,8 @@ export async function getUserAnalysis(
     return null;
   }
 
-  const client =
-    await clientPromise;
-
-  const db =
-    client.db(DB_NAME);
-
+  const client = await clientPromise;
+  const db = client.db(DB_NAME);
   return db
     .collection<AnalysisHistory>(
       "analyses"
@@ -158,7 +102,6 @@ export async function getUserAnalysis(
         new ObjectId(
           analysisId
         ),
-
       userId,
     });
 }

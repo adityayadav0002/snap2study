@@ -9,7 +9,6 @@
   --blue: #8bb9ff;
   --black: #111111;
 
-  /* Snap2Study UI system */
   --border: 2px solid var(--black);
   --shadow-sm: 5px 5px 0 var(--black);
   --shadow-md: 7px 7px 0 var(--black);
@@ -94,10 +93,6 @@ img {
   border: var(--border);
 }
 
-/* -----------------------------------------
-   PAGE REVEAL
------------------------------------------ */
-
 @keyframes snapReveal {
   from {
     opacity: 0;
@@ -114,10 +109,6 @@ img {
   animation: snapReveal 0.65s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-/* -----------------------------------------
-   FLOATING SHAPES
------------------------------------------ */
-
 @keyframes snapFloat {
   0%,
   100% {
@@ -132,10 +123,6 @@ img {
 .snap-float {
   animation: snapFloat 5s ease-in-out infinite;
 }
-
-/* -----------------------------------------
-   UPLOAD PULSE
------------------------------------------ */
 
 @keyframes snapPulse {
   0%,
@@ -153,10 +140,6 @@ img {
 .snap-pulse {
   animation: snapPulse 1.5s ease-in-out infinite;
 }
-
-/* -----------------------------------------
-   ANSWER RENDERER
------------------------------------------ */
 
 .answer-renderer {
   color: var(--black);
@@ -289,10 +272,6 @@ img {
   font-weight: 800;
 }
 
-/* -----------------------------------------
-   SMALL UI HELPERS
------------------------------------------ */
-
 .snap-divider {
   border-top: var(--border);
 }
@@ -320,10 +299,6 @@ img {
   transform: translate(0, 0);
   box-shadow: none;
 }
-
-/* -----------------------------------------
-   MOBILE
------------------------------------------ */
 
 @media (max-width: 640px) {
   .container {
@@ -357,19 +332,11 @@ img {
   }
 }
 
-/* -----------------------------------------
-   VERY SMALL SCREENS
------------------------------------------ */
-
 @media (max-width: 380px) {
   .container {
     width: min(100% - 20px, 1380px);
   }
 }
-
-/* -----------------------------------------
-   REDUCED MOTION
------------------------------------------ */
 
 @media (prefers-reduced-motion: reduce) {
   html {
@@ -385,13 +352,6 @@ img {
     scroll-behavior: auto !important;
   }
 }
-
-/* -----------------------------------------
-   PRINT
-   Kept here instead of styled-jsx because
-   styled-jsx previously caused a Turbopack
-   parsing issue in this project.
------------------------------------------ */
 
 @media print {
   body {

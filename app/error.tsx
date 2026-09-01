@@ -20,7 +20,6 @@ export default function ErrorPage({
       <div className="container flex min-h-screen items-center justify-center py-16">
 
         <section className="w-full max-w-xl border-2 border-black bg-(--cream) p-8 shadow-[8px_8px_0_var(--black)]">
-
           <div className="mono text-[9px] font-bold uppercase tracking-[0.15em] text-black/40">
             SNAP2STUDY / ERROR
           </div>
@@ -40,42 +39,19 @@ export default function ErrorPage({
               type="button"
               onClick={reset}
               className="
-                brutal-border
-                bg-(--yellow)
-                px-5
-                py-3
-                text-[9px]
-                font-bold
-                uppercase
-                tracking-[0.12em]
-                shadow-[4px_4px_0_var(--black)]
-                transition-all
-                hover:-translate-x-0.5
-                hover:-translate-y-0.5
-                hover:shadow-[6px_6px_0_var(--black)]
-              "
-            >
+                brutal-border bg-(--yellow) px-5 py-3 text-[9px] font-bold uppercase tracking-[0.12em]
+                shadow-[4px_4px_0_var(--black)] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0_var(--black)]
+              ">
               Try again
             </button>
 
             <a
               href="/"
               className="
-                brutal-border
-                bg-(--paper)
-                px-5
-                py-3
-                text-[9px]
-                font-bold
-                uppercase
-                tracking-[0.12em]
-                transition-colors
-                hover:bg-(--coral)
-              "
-            >
+                brutal-border bg-(--paper) px-5 py-3 text-[9px] font-bold uppercase tracking-[0.12em] transition-colors hover:bg-(--coral)
+              ">
               Back home
             </a>
-
           </div>
 
         </section>

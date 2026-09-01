@@ -1,11 +1,8 @@
 import clientPromise from "@/lib/db";
 
 export async function ensureAuthIndexes() {
-  const client =
-    await clientPromise;
-
-  const db =
-    client.db("snap2study");
+  const client = await clientPromise;
+  const db = client.db("snap2study");
 
   await db
     .collection("users")

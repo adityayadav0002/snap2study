@@ -1,15 +1,9 @@
 "use client";
 
-import {
-  FormEvent,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { FormEvent, useEffect, useRef, useState, } from "react";
 import { useRouter } from "next/navigation";
 
 type AuthStep = "email" | "otp";
-
 type ApiResponse = {
   success?: boolean;
   message?: string;
@@ -23,40 +17,17 @@ type ApiResponse = {
 
 export default function AuthPage() {
   const router = useRouter();
-
-  const [step, setStep] =
-    useState<AuthStep>("email");
-
-  const [email, setEmail] =
-    useState("");
-
-  const [otp, setOtp] =
-    useState("");
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
-
-  const [message, setMessage] =
-    useState("");
-
-  const [cooldown, setCooldown] =
-    useState(0);
-
-  const otpInputRef =
-    useRef<HTMLInputElement>(null);
-
-  /*
-   * =====================================================
-   * CHECK EXISTING SESSION
-   * =====================================================
-   */
+  const [step, setStep] = useState<AuthStep>("email");
+  const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [cooldown, setCooldown] = useState(0);
+  const otpInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let cancelled = false;
-
     async function checkSession() {
       try {
         const response =
@@ -64,24 +35,19 @@ export default function AuthPage() {
             method: "GET",
             cache: "no-store",
           });
-
         if (!response.ok) return;
 
-        const data: ApiResponse =
-          await response.json();
+        const data: ApiResponse = await response.json();
 
-        if (
-          !cancelled &&
-          data.success !== false &&
-          data.user
+        if ( 
+          !cancelled && data.success !== false && data.user
         ) {
           router.replace("/");
         }
       } catch {
-        // User is simply not logged in.
+
       }
     }
-
     checkSession();
 
     return () => {
@@ -89,43 +55,29 @@ export default function AuthPage() {
     };
   }, [router]);
 
-  /*
-   * =====================================================
-   * OTP COUNTDOWN
-   * =====================================================
-   */
+  // OTP TIMER
 
   useEffect(() => {
     if (cooldown <= 0) return;
-
     const timer =
       window.setInterval(() => {
         setCooldown((current) =>
           current > 0 ? current - 1 : 0
         );
       }, 1000);
-
     return () =>
       window.clearInterval(timer);
   }, [cooldown]);
 
-  /*
-   * =====================================================
-   * SEND OTP
-   * =====================================================
-   */
+  //OTP SENDING
 
   const requestOtp = async () => {
-    const normalizedEmail =
-      email.trim().toLowerCase();
+    const normalizedEmail = email.trim().toLowerCase();
 
     if (!normalizedEmail) {
-      setError(
-        "Please enter your email address."
-      );
+      setError( "Please enter your email address." );
       return;
     }
-
     setLoading(true);
     setError("");
     setMessage("");
@@ -137,8 +89,7 @@ export default function AuthPage() {
           {
             method: "POST",
             headers: {
-              "Content-Type":
-                "application/json",
+              "Content-Type": "application/json",
             },
             body: JSON.stringify({
               email: normalizedEmail,
@@ -146,13 +97,10 @@ export default function AuthPage() {
           }
         );
 
-      const data: ApiResponse =
-        await response.json();
-
+      const data: ApiResponse = await response.json();
       if (!response.ok) {
         throw new Error(
-          data.error ||
-            "Unable to send verification code."
+          data.error || "Unable to send verification code."
         );
       }
 
@@ -160,10 +108,7 @@ export default function AuthPage() {
       setOtp("");
       setStep("otp");
       setCooldown(60);
-
-      setMessage(
-        "Verification code sent. Check your email."
-      );
+      setMessage( "Verification code sent. Check your email." );
 
       window.setTimeout(() => {
         otpInputRef.current?.focus();
@@ -171,28 +116,19 @@ export default function AuthPage() {
     } catch (error) {
       setError(
         error instanceof Error
-          ? error.message
-          : "Unable to send verification code."
+          ? error.message : "Unable to send verification code."
       );
     } finally {
       setLoading(false);
     }
   };
 
-  /*
-   * =====================================================
-   * VERIFY OTP
-   * =====================================================
-   */
+  //OTP VERIFICATION
 
   const verifyOtp = async () => {
-    const normalizedOtp =
-      otp.trim();
-
+    const normalizedOtp = otp.trim();
     if (!/^\d{6}$/.test(normalizedOtp)) {
-      setError(
-        "Enter the 6-digit verification code."
-      );
+      setError( "Enter the 6-digit verification code." );
       return;
     }
 
@@ -217,33 +153,20 @@ export default function AuthPage() {
           }
         );
 
-      const data: ApiResponse =
-        await response.json();
+      const data: ApiResponse = await response.json();
 
       if (!response.ok) {
         throw new Error(
-          data.error ||
-            "Unable to verify the code."
+          data.error || "Unable to verify the code."
         );
       }
-
       if (
-        !data.user ||
-        !data.user.id
+        !data.user || !data.user.id
       ) {
-        throw new Error(
-          "Authentication succeeded but no user was returned."
-        );
+        throw new Error( "Authentication succeeded but no user was returned." );
       }
 
-      setMessage(
-        "Verified successfully. Welcome to Snap2Study."
-      );
-
-      /*
-       * Give the browser a moment to receive
-       * the session cookie before navigating.
-       */
+      setMessage( "Verified successfully. Welcome to Snap2Study." );
 
       window.setTimeout(() => {
         router.replace("/");
@@ -252,27 +175,20 @@ export default function AuthPage() {
     } catch (error) {
       setError(
         error instanceof Error
-          ? error.message
-          : "Unable to verify the code."
+          ? error.message : "Unable to verify the code."
       );
     } finally {
       setLoading(false);
     }
   };
 
-  /*
-   * =====================================================
-   * FORM HANDLERS
-   * =====================================================
-   */
+  // HANDLING FORM SUBMISSIONS
 
   const handleEmailSubmit = async (
     event: FormEvent<HTMLFormElement>
   ) => {
     event.preventDefault();
-
     if (loading) return;
-
     await requestOtp();
   };
 
@@ -280,70 +196,46 @@ export default function AuthPage() {
     event: FormEvent<HTMLFormElement>
   ) => {
     event.preventDefault();
-
     if (loading) return;
-
     await verifyOtp();
   };
 
-  /*
-   * =====================================================
-   * CHANGE EMAIL
-   * =====================================================
-   */
+  //CHANGE EMAIL
 
   const changeEmail = () => {
     if (loading) return;
-
     setStep("email");
     setOtp("");
     setError("");
     setMessage("");
   };
 
-  /*
-   * =====================================================
-   * RESEND OTP
-   * =====================================================
-   */
-
+  // RESEND OTP
   const resendOtp = async () => {
-    if (
-      loading ||
-      cooldown > 0
+    if ( 
+      loading || cooldown > 0
     ) {
       return;
     }
-
     await requestOtp();
   };
 
-  /*
-   * =====================================================
-   * MASK EMAIL
-   * =====================================================
-   */
+  // MASKED EMAIL DISPLAY
 
   const maskedEmail = (() => {
-    const parts =
-      email.split("@");
-
+    const parts = email.split("@");
     if (
       parts.length !== 2
     ) {
       return email;
     }
 
-    const username =
-      parts[0];
-
-    const domain =
-      parts[1];
+    const username = parts[0];
+    const domain = parts[1];
 
     if (username.length <= 2) {
       return `${username[0] || "*"}***@${domain}`;
     }
-
     return `${username.slice(
       0,
       2
@@ -356,148 +248,38 @@ export default function AuthPage() {
   })();
 
   return (
-    <main
-      className="
-        min-h-screen
-        bg-(--cream)
-        px-5
-        py-8
-        sm:px-8
-        sm:py-12
-      "
-    >
-      <div
-        className="
-          mx-auto
-          flex
-          min-h-[calc(100vh-4rem)]
-          max-w-6xl
-          flex-col
-        "
-      >
-        {/* =================================================
-            HEADER
-        ================================================= */}
+    <main className=" min-h-screen bg-(--cream) px-5 py-8 sm:px-8 sm:py-12 ">
+      <div className=" mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl flex-col ">
 
-        <header
-          className="
-            flex
-            items-center
-            justify-between
-            border-b-2
-            border-black
-            pb-5
-          "
-        >
-          <button
-            type="button"
+        <header className=" flex items-center justify-between border-b-2 border-black pb-5 ">
+          <button type="button"
             onClick={() =>
               router.push("/")
             }
-            className="
-              serif
-              text-2xl
-              leading-none
-              transition-opacity
-              hover:opacity-60
-            "
-          >
+            className=" serif text-2xl leading-none transition- hover:opacity-60 ">
             SNAP2STUDY
           </button>
-
-          <span
-            className="
-              mono
-              text-[8px]
-              font-bold
-              uppercase
-              tracking-[0.15em]
-              text-black/40
-            "
-          >
+          <span className=" mono text-[8px] font-bold uppercase tracking-[0.15em] text-black/40 ">
             ACCOUNT / 01
           </span>
         </header>
 
-        {/* =================================================
-            CONTENT
-        ================================================= */}
+        <section className=" flex flex-1 items-center justify-center py-12 sm:py-16 ">
+          <div className=" grid w-full max-w-5xl overflow-hidden border-2 border-black bg-(--paper) shadow-[8px_8px_0_var(--black)] lg:grid-cols-[0.85fr_1.15fr] ">
 
-        <section
-          className="
-            flex
-            flex-1
-            items-center
-            justify-center
-            py-12
-            sm:py-16
-          "
-        >
-          <div
-            className="
-              grid
-              w-full
-              max-w-5xl
-              overflow-hidden
-              border-2
-              border-black
-              bg-(--paper)
-              shadow-[8px_8px_0_var(--black)]
-              lg:grid-cols-[0.85fr_1.15fr]
-            "
-          >
-            {/* =============================================
-                LEFT EDITORIAL PANEL
-            ============================================= */}
-
-            <div
-              className="
-                hidden
-                border-r-2
-                border-black
-                bg-(--yellow)
-                p-8
-                lg:flex
-                lg:flex-col
-                lg:justify-between
-              "
-            >
+            <div className=" hidden border-r-2 border-black bg-(--yellow) p-8 lg:flex lg:flex-col lg:justify-between ">
               <div>
-                <p
-                  className="
-                    mono
-                    text-[9px]
-                    font-bold
-                    uppercase
-                    tracking-[0.15em]
-                  "
-                >
+                <p className=" mono text-[9px] font-bold uppercase tracking-[0.15em] ">
                   SNAP2STUDY
                 </p>
 
-                <h1
-                  className="
-                    serif
-                    mt-8
-                    text-6xl
-                    leading-[0.88]
-                    tracking-tight
-                  "
-                >
+                <h1 className=" serif mt-8 text-6xl leading-[0.88] tracking-tight ">
                   Learn
                   <br />
                   smarter.
                 </h1>
 
-                <p
-                  className="
-                    mt-7
-                    max-w-xs
-                    text-sm
-                    leading-6
-                    text-black/60
-                  "
-                >
+                <p className=" mt-7 max-w-xs text-sm leading-6  text-black/60 ">
                   Save your questions,
                   revisit your answers,
                   and keep your learning
@@ -506,24 +288,9 @@ export default function AuthPage() {
               </div>
 
               <div>
-                <div
-                  className="
-                    mb-5
-                    h-px
-                    w-full
-                    bg-black/20
-                  "
-                />
+                <div className=" mb-5 h-px w-full bg-black/20 "/>
 
-                <p
-                  className="
-                    mono
-                    text-[8px]
-                    uppercase
-                    tracking-[0.12em]
-                    text-black/45
-                  "
-                >
+                <p className=" mono text-[8px] uppercase tracking-[0.12em] text-black/45 ">
                   SNAP.
                   <br />
                   UNDERSTAND.
@@ -533,150 +300,53 @@ export default function AuthPage() {
               </div>
             </div>
 
-            {/* =============================================
-                AUTH PANEL
-            ============================================= */}
-
-            <div
-              className="
-                p-6
-                sm:p-10
-                lg:p-12
-              "
-            >
+            <div className=" p-6 sm:p-10 lg:p-12 ">
               {step === "email" ? (
                 <>
                   <div>
-                    <p
-                      className="
-                        mono
-                        text-[9px]
-                        font-bold
-                        uppercase
-                        tracking-[0.15em]
-                        text-black/45
-                      "
-                    >
+                    <p className=" mono text-[9px] font-bold uppercase tracking-[0.15em] text-black/45 ">
                       WELCOME / 01
                     </p>
 
-                    <h2
-                      className="
-                        serif
-                        mt-4
-                        text-4xl
-                        leading-none
-                        sm:text-5xl
-                      "
-                    >
+                    <h2 className=" serif mt-4 text-4xl leading-none sm:text-5xl ">
                       Welcome to
                       <br />
                       Snap2Study.
                     </h2>
-
-                    <p
-                      className="
-                        mt-5
-                        max-w-md
-                        text-sm
-                        leading-6
-                        text-black/50
-                      "
-                    >
+                    <p className=" mt-5 max-w-md text-smleading-6 text-black/50 ">
                       Enter your email to
                       create an account or
                       continue where you left
                       off.
                     </p>
                   </div>
-
-                  <form
-                    onSubmit={
-                      handleEmailSubmit
-                    }
-                    className="mt-10"
-                  >
-                    <label
-                      htmlFor="email"
-                      className="
-                        mono
-                        mb-2
-                        block
-                        text-[9px]
-                        font-bold
-                        uppercase
-                        tracking-[0.12em]
-                      "
-                    >
+                  <form onSubmit={ handleEmailSubmit } className="mt-10">
+                    <label htmlFor="email" className=" mono mb-2 block text-[9px] font-bold uppercase tracking-[0.12em] ">
                       Email address
                     </label>
 
-                    <input
-                      id="email"
-                      type="email"
-                      inputMode="email"
-                      autoComplete="email"
-                      value={email}
+                    <input id="email" type="email" inputMode="email" autoComplete="email" value={email}
                       onChange={(event) => {
                         setEmail(
                           event.target.value
                         );
                         setError("");
                       }}
-                      placeholder="you@example.com"
-                      disabled={loading}
-                      className="
-                        w-full
-                        border-2
-                        border-black
-                        bg-white
-                        px-4
-                        py-4
-                        text-sm
-                        outline-none
-                        transition-shadow
-                        placeholder:text-black/25
-                        focus:shadow-[4px_4px_0_var(--yellow)]
-                        disabled:cursor-not-allowed
-                        disabled:opacity-60
-                      "
-                    />
+                      placeholder="you@example.com" disabled={loading}
+                      className=" w-full border-2 border-black bg-white px-4 py-4 text-sm outline-none 
+                      transition-shadow placeholder:text-black/25 focus:shadow-[4px_4px_0_var(--yellow)] disabled:cursor-not-allowed disabled:opacity-60 "
+                      />
 
-                    <button
-                      type="submit"
+                    <button type="submit"
                       disabled={
                         loading ||
                         !email.trim()
                       }
                       className="
-                        mt-5
-                        flex
-                        w-full
-                        items-center
-                        justify-center
-                        gap-3
-                        border-2
-                        border-black
-                        bg-(--black)
-                        px-5
-                        py-4
-                        text-[10px]
-                        font-bold
-                        uppercase
-                        tracking-[0.1em]
-                        text-(--cream)
-                        shadow-[4px_4px_0_var(--coral)]
-                        transition-all
-                        hover:-translate-x-0.5
-                        hover:-translate-y-0.5
-                        hover:shadow-[6px_6px_0_var(--coral)]
-                        active:translate-x-0
-                        active:translate-y-0
-                        active:shadow-none
-                        disabled:cursor-not-allowed
-                        disabled:opacity-40
-                      "
-                    >
+                        mt-5 flex w-full items-center justify-center gap-3 border-2 border-black bg-(--black) px-5 py-4 text-[10px] font-bold
+                        uppercase tracking-[0.1em] text-(--cream) shadow-[4px_4px_0_var(--coral)] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5
+                        hover:shadow-[6px_6px_0_var(--coral)] active:translate-x-0 active:translate-y-0 active:shadow-none disabled:cursor-not-allowed disabled:opacity-40
+                      ">
                       {loading ? (
                         <>
                           Sending
@@ -695,24 +365,8 @@ export default function AuthPage() {
                     </button>
                   </form>
 
-                  <div
-                    className="
-                      mt-7
-                      border-t
-                      border-black/10
-                      pt-5
-                    "
-                  >
-                    <p
-                      className="
-                        mono
-                        text-[8px]
-                        uppercase
-                        leading-5
-                        tracking-[0.08em]
-                        text-black/35
-                      "
-                    >
+                  <div className=" mt-7 border-t border-black/10 pt-5 ">
+                    <p className=" mono text-[8px] uppercase leading-5 tracking-[0.08em] text-black/35  ">
                       No password required.
                       <br />
                       We will send a secure
@@ -724,100 +378,37 @@ export default function AuthPage() {
               ) : (
                 <>
                   <div>
-                    <button
-                      type="button"
-                      onClick={
-                        changeEmail
-                      }
+                    <button type="button"
+                      onClick={ changeEmail }
                       disabled={loading}
-                      className="
-                        mono
-                        text-[9px]
-                        font-bold
-                        uppercase
-                        tracking-[0.1em]
-                        underline
-                        underline-offset-4
-                        transition-opacity
-                        hover:opacity-50
-                        disabled:opacity-30
-                      "
-                    >
+                      className=" 
+                      mono text-[9px] font-bold uppercase tracking-[0.1em] underline underline-offset-4 transition-opacity hover:opacity-50 disabled:opacity-30
+                      ">
                       ← Change email
                     </button>
 
-                    <p
-                      className="
-                        mono
-                        mt-8
-                        text-[9px]
-                        font-bold
-                        uppercase
-                        tracking-[0.15em]
-                        text-black/45
-                      "
-                    >
+                    <p className=" mono mt-8 text-[9px] font-bold uppercase tracking-[0.15em] text-black/45 ">
                       VERIFY / 02
                     </p>
 
-                    <h2
-                      className="
-                        serif
-                        mt-4
-                        text-4xl
-                        leading-none
-                        sm:text-5xl
-                      "
-                    >
+                    <h2 className=" serif mt-4 text-4xl leading-none sm:text-5xl ">
                       Check your
                       <br />
                       email.
                     </h2>
 
-                    <p
-                      className="
-                        mt-5
-                        max-w-md
-                        text-sm
-                        leading-6
-                        text-black/50
-                      "
-                    >
+                    <p className=" mt-5 max-w-md text-sm leading-6 text-black/50 ">
                       We sent a 6-digit
                       verification code to
                     </p>
 
-                    <p
-                      className="
-                        mono
-                        mt-2
-                        break-all
-                        text-[10px]
-                        font-bold
-                      "
-                    >
+                    <p className=" mono mt-2 break-all text-[10px] font-bold ">
                       {maskedEmail}
                     </p>
                   </div>
 
-                  <form
-                    onSubmit={
-                      handleOtpSubmit
-                    }
-                    className="mt-10"
-                  >
-                    <label
-                      htmlFor="otp"
-                      className="
-                        mono
-                        mb-2
-                        block
-                        text-[9px]
-                        font-bold
-                        uppercase
-                        tracking-[0.12em]
-                      "
-                    >
+                  <form onSubmit={ handleOtpSubmit } className="mt-10" >
+                    <label htmlFor="otp" className=" mono mb-2 block text-[9px] font-bold uppercase tracking-[0.12em] ">
                       Verification code
                     </label>
 
@@ -837,68 +428,26 @@ export default function AuthPage() {
                               ""
                             )
                             .slice(0, 6);
-
                         setOtp(value);
                         setError("");
                       }}
                       placeholder="000000"
                       disabled={loading}
                       className="
-                        mono
-                        w-full
-                        border-2
-                        border-black
-                        bg-white
-                        px-4
-                        py-5
-                        text-center
-                        text-3xl
-                        font-bold
-                        tracking-[0.35em]
-                        outline-none
-                        transition-shadow
-                        placeholder:text-black/15
-                        focus:shadow-[4px_4px_0_var(--yellow)]
-                        disabled:cursor-not-allowed
-                        disabled:opacity-60
-                      "
-                    />
+                        mono w-full border-2 border-black bg-white px-4 py-5 text-center text-3xl font-bold
+                        tracking-[0.35em] outline-none transition-shadow placeholder:text-black/15 focus:shadow-[4px_4px_0_var(--yellow)] disabled:cursor-not-allowed disabled:opacity-60
+                         "/>
 
                     <button
                       type="submit"
                       disabled={
-                        loading ||
-                        otp.length !== 6
+                        loading || otp.length !== 6
                       }
                       className="
-                        mt-5
-                        flex
-                        w-full
-                        items-center
-                        justify-center
-                        gap-3
-                        border-2
-                        border-black
-                        bg-(--black)
-                        px-5
-                        py-4
-                        text-[10px]
-                        font-bold
-                        uppercase
-                        tracking-[0.1em]
-                        text-(--cream)
-                        shadow-[4px_4px_0_var(--coral)]
-                        transition-all
-                        hover:-translate-x-0.5
-                        hover:-translate-y-0.5
-                        hover:shadow-[6px_6px_0_var(--coral)]
-                        active:translate-x-0
-                        active:translate-y-0
-                        active:shadow-none
-                        disabled:cursor-not-allowed
-                        disabled:opacity-40
-                      "
-                    >
+                        mt-5 flex w-full items-center justify-center gap-3 border-2 border-black bg-(--black)
+                        px-5 py-4 text-[10px] font-bold uppercase tracking-[0.1em] text-(--cream) shadow-[4px_4px_0_var(--coral)] transition-all
+                        hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0_var(--coral)] active:translate-x-0 active:translate-y-0 active:shadow-none disabled:cursor-not-allowed disabled:opacity-40
+                      ">
                       {loading ? (
                         <>
                           Verifying
@@ -917,118 +466,39 @@ export default function AuthPage() {
                     </button>
                   </form>
 
-                  <div
-                    className="
-                      mt-6
-                      flex
-                      flex-col
-                      gap-3
-                      border-t
-                      border-black/10
-                      pt-5
-                      sm:flex-row
-                      sm:items-center
-                      sm:justify-between
-                    "
-                  >
+                  <div className=" mt-6 flex flex-col gap-3 border-t border-black/10 pt-5 sm:flex-row sm:items-center sm:justify-between ">
                     <button
                       type="button"
-                      onClick={
-                        resendOtp
-                      }
+                      onClick={ resendOtp }
                       disabled={
-                        loading ||
-                        cooldown > 0
+                        loading || cooldown > 0
                       }
                       className="
-                        mono
-                        text-left
-                        text-[8px]
-                        font-bold
-                        uppercase
-                        tracking-[0.1em]
-                        underline
-                        underline-offset-4
-                        transition-opacity
-                        hover:opacity-50
-                        disabled:cursor-not-allowed
-                        disabled:no-underline
-                        disabled:opacity-30
-                      "
-                    >
+                        mono text-left text-[8px] font-bold uppercase tracking-[0.1em]
+                        underline underline-offset-4 transition-opacity hover:opacity-50 disabled:cursor-not-allowed disabled:no-underline disabled:opacity-30
+                      ">
                       {cooldown > 0
-                        ? `Resend code in ${cooldown}s`
-                        : "Resend code"}
+                        ? `Resend code in ${cooldown}s` : "Resend code"}
                     </button>
 
-                    <span
-                      className="
-                        mono
-                        text-[8px]
-                        uppercase
-                        tracking-[0.08em]
-                        text-black/30
-                      "
-                    >
+                    <span className=" mono text-[8px] uppercase tracking-[0.08em] text-black/30 ">
                       Code expires in 10 minutes
                     </span>
                   </div>
                 </>
               )}
 
-              {/* ===========================================
-                  FEEDBACK
-              =========================================== */}
-
               {message && (
-                <div
-                  className="
-                    mt-5
-                    border-2
-                    border-black
-                    bg-(--yellow)
-                    px-4
-                    py-3
-                    shadow-[3px_3px_0_var(--black)]
-                  "
-                >
-                  <p
-                    className="
-                      mono
-                      text-[8px]
-                      font-bold
-                      uppercase
-                      leading-5
-                      tracking-[0.08em]
-                    "
-                  >
+                <div className=" mt-5 border-2 border-black bg-(--yellow) px-4 py-3 shadow-[3px_3px_0_var(--black)] ">
+                  <p className=" mono text-[8px] font-bold uppercase leading-5 tracking-[0.08em] ">
                     {message}
                   </p>
                 </div>
               )}
 
               {error && (
-                <div
-                  className="
-                    mt-5
-                    border-2
-                    border-black
-                    bg-(--coral)
-                    px-4
-                    py-3
-                    shadow-[3px_3px_0_var(--black)]
-                  "
-                >
-                  <p
-                    className="
-                      mono
-                      text-[8px]
-                      font-bold
-                      uppercase
-                      leading-5
-                      tracking-[0.08em]
-                    "
-                  >
+                <div className=" mt-5 border-2 border-black bg-(--coral) px-4 py-3 shadow-[3px_3px_0_var(--black)] ">
+                  <p className=" mono text-[8px] font-bold uppercase leading-5 tracking-[0.08em] ">
                     Error: {error}
                   </p>
                 </div>
@@ -1037,48 +507,13 @@ export default function AuthPage() {
           </div>
         </section>
 
-        {/* =================================================
-            FOOTER
-        ================================================= */}
-
-        <footer
-          className="
-            border-t
-            border-black/10
-            pt-5
-          "
-        >
-          <div
-            className="
-              flex
-              flex-col
-              gap-2
-              sm:flex-row
-              sm:items-center
-              sm:justify-between
-            "
-          >
-            <span
-              className="
-                mono
-                text-[8px]
-                uppercase
-                tracking-[0.1em]
-                text-black/30
-              "
-            >
+        <footer className=" border-t border-black/10 pt-5 ">
+          <div className=" flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between ">
+            <span className=" mono text-[8px] uppercase tracking-[0.1em] text-black/30 ">
               Snap. Understand. Learn.
             </span>
 
-            <span
-              className="
-                mono
-                text-[8px]
-                uppercase
-                tracking-[0.1em]
-                text-black/30
-              "
-            >
+            <span className=" mono text-[8px] uppercase tracking-[0.1em] text-black/30 ">
               Secure email authentication
             </span>
           </div>

@@ -11,33 +11,21 @@ type AnswerRendererProps = {
   className?: string;
 };
 
-/* =========================================================
-   PROTECT CODE BLOCKS
-========================================================= */
-
 function protectCodeBlocks(content: string) {
   const codeBlocks: string[] = [];
-
   const protectedContent = content.replace(
     /```[\s\S]*?```/g,
     (block) => {
       const index = codeBlocks.length;
-
       codeBlocks.push(block);
-
       return `___SNAP2STUDY_CODE_BLOCK_${index}___`;
     }
   );
-
   return {
     protectedContent,
     codeBlocks,
   };
 }
-
-/* =========================================================
-   RESTORE CODE BLOCKS
-========================================================= */
 
 function restoreCodeBlocks(
   content: string,
@@ -50,13 +38,8 @@ function restoreCodeBlocks(
   );
 }
 
-/* =========================================================
-   LATEX NORMALIZATION
-========================================================= */
-
 function normalizeLatex(content: string): string {
   let result = content;
-
   result = result.replace(
     /(?<!\\)\bext\s*\{/g,
     "\\text{"
@@ -112,10 +95,6 @@ function normalizeLatex(content: string): string {
   return result;
 }
 
-/* =========================================================
-   CONVERT LATEX DELIMITERS
-========================================================= */
-
 function convertLatexDelimiters(content: string): string {
   let result = content;
 
@@ -130,13 +109,8 @@ function convertLatexDelimiters(content: string): string {
     (_match, expression: string) =>
       `$${expression.trim()}$`
   );
-
   return result;
 }
-
-/* =========================================================
-   LATEX COMMAND DETECTION
-========================================================= */
 
 function containsLatexCommand(text: string): boolean {
   return /\\(?:int|iint|iiint|oint|frac|dfrac|tfrac|sqrt|sum|prod|lim|sin|cos|tan|cot|sec|csc|log|ln|exp|partial|nabla|alpha|beta|gamma|delta|epsilon|theta|lambda|mu|pi|sigma|phi|omega|infty|cdot|times|leq|geq|neq|pm|mp|rightarrow|leftarrow|Rightarrow|Leftarrow|to|over|under|mathrm|mathbf|text|vec|hat|bar|circ)\b/.test(
@@ -144,13 +118,8 @@ function containsLatexCommand(text: string): boolean {
   );
 }
 
-/* =========================================================
-   PROTECT EXISTING MATH
-========================================================= */
-
 function protectMath(content: string) {
   const mathBlocks: string[] = [];
-
   const protectedContent = content.replace(
     /(\$\$[\s\S]*?\$\$|\$(?!\$)[\s\S]*?\$)/g,
     (match) => {
@@ -161,16 +130,11 @@ function protectMath(content: string) {
       return `___SNAP2STUDY_MATH_${index}___`;
     }
   );
-
   return {
     protectedContent,
     mathBlocks,
   };
 }
-
-/* =========================================================
-   RESTORE MATH
-========================================================= */
 
 function restoreMath(
   content: string,
@@ -183,19 +147,13 @@ function restoreMath(
   );
 }
 
-/* =========================================================
-   WRAP BARE LATEX
-========================================================= */
-
 function wrapBareLatexInText(text: string): string {
   if (!containsLatexCommand(text)) {
     return text;
   }
-
   const numberedMatch = text.match(
     /^(\s*\d+[\.\)]\s+)(.*)$/
   );
-
   if (numberedMatch) {
     const prefix = numberedMatch[1];
     const expression = numberedMatch[2].trim();
@@ -219,7 +177,6 @@ function wrapBareLatexInText(text: string): string {
   }
 
   let result = text;
-
   result = result.replace(
     /((?:\\(?:int|iint|iiint|oint|frac|dfrac|tfrac|sqrt|sum|prod|lim|sin|cos|tan|cot|sec|csc|log|ln|exp|partial|nabla|alpha|beta|gamma|delta|epsilon|theta|lambda|mu|pi|sigma|phi|omega|infty|cdot|times|leq|geq|neq|pm|mp|rightarrow|leftarrow|Rightarrow|Leftarrow|to|over|under|mathrm|mathbf|text|vec|hat|bar|circ)\b)[^.;:!?]*(?:\{[^{}]*\}[^.;:!?]*)*)/g,
     (match) => {
@@ -228,17 +185,11 @@ function wrapBareLatexInText(text: string): string {
       if (!trimmed) {
         return match;
       }
-
       return `$${trimmed}$`;
     }
   );
-
   return result;
 }
-
-/* =========================================================
-   PROCESS BARE LATEX
-========================================================= */
 
 function wrapBareLatex(content: string): string {
   return content
@@ -269,10 +220,6 @@ function wrapBareLatex(content: string): string {
     .join("\n");
 }
 
-/* =========================================================
-   MAIN NORMALIZATION
-========================================================= */
-
 function normalizeMath(content: string): string {
   if (!content) {
     return "";
@@ -284,9 +231,7 @@ function normalizeMath(content: string): string {
   } = protectCodeBlocks(content);
 
   let result = protectedContent;
-
   result = normalizeLatex(result);
-
   result = convertLatexDelimiters(result);
 
   const {
@@ -295,14 +240,11 @@ function normalizeMath(content: string): string {
   } = protectMath(result);
 
   result = mathProtected;
-
   result = wrapBareLatex(result);
-
   result = restoreMath(
     result,
     mathBlocks
   );
-
   result = restoreCodeBlocks(
     result,
     codeBlocks
@@ -310,10 +252,6 @@ function normalizeMath(content: string): string {
 
   return result;
 }
-
-/* =========================================================
-   CODE LANGUAGE
-========================================================= */
 
 function getLanguage(
   className?: string
@@ -330,10 +268,6 @@ function getLanguage(
   return match?.[1] ?? "";
 }
 
-/* =========================================================
-   CODE BLOCK
-========================================================= */
-
 function CodeBlock({
   children,
   className,
@@ -345,8 +279,6 @@ function CodeBlock({
 
   return (
     <div className="my-8 overflow-hidden border-2 border-black bg-(--black) shadow-[6px_6px_0_var(--coral)]">
-
-      {/* CODE HEADER */}
 
       <div className="flex items-center justify-between border-b border-white/15 px-4 py-3">
 
@@ -366,8 +298,6 @@ function CodeBlock({
 
       </div>
 
-      {/* CODE */}
-
       <pre className="overflow-x-auto p-5 font-mono text-[12px] leading-6 text-white sm:p-6 sm:text-[13px]">
         <code className={className}>
           {children}
@@ -378,25 +308,13 @@ function CodeBlock({
   );
 }
 
-/* =========================================================
-   MARKDOWN COMPONENTS
-========================================================= */
-
 const markdownComponents: Components = {
-
-  /* -------------------------------------------------------
-     PARAGRAPH
-  ------------------------------------------------------- */
 
   p: ({ children }) => (
     <p className="mb-6 max-w-3xl text-[15px] leading-8 text-black/75 last:mb-0 sm:text-base">
       {children}
     </p>
   ),
-
-  /* -------------------------------------------------------
-     HEADINGS
-  ------------------------------------------------------- */
 
   h1: ({ children }) => (
     <h1 className="serif mb-7 mt-12 text-4xl leading-[0.95] first:mt-0 sm:text-5xl">
@@ -406,9 +324,7 @@ const markdownComponents: Components = {
 
   h2: ({ children }) => (
     <h2 className="serif mb-5 mt-11 flex items-center gap-3 text-3xl leading-none first:mt-0 sm:text-4xl">
-
       <span className="inline-block h-3 w-3 shrink-0 border-2 border-black bg-(--coral)" />
-
       {children}
 
     </h2>
@@ -420,19 +336,11 @@ const markdownComponents: Components = {
     </h3>
   ),
 
-  /* -------------------------------------------------------
-     STRONG
-  ------------------------------------------------------- */
-
   strong: ({ children }) => (
     <strong className="font-bold text-black">
       {children}
     </strong>
   ),
-
-  /* -------------------------------------------------------
-     EMPHASIS
-  ------------------------------------------------------- */
 
   em: ({ children }) => (
     <em className="italic">
@@ -440,24 +348,16 @@ const markdownComponents: Components = {
     </em>
   ),
 
-  /* -------------------------------------------------------
-     INLINE CODE / BLOCK CODE
-  ------------------------------------------------------- */
-
   code: ({
     children,
     className,
   }) => {
 
-    const isBlock =
-      Boolean(className) ||
-      String(children).includes("\n");
+    const isBlock = Boolean(className) || String(children).includes("\n");
 
     if (isBlock) {
       return (
-        <CodeBlock
-          className={className}
-        >
+        <CodeBlock className={className}>
           {children}
         </CodeBlock>
       );
@@ -469,10 +369,6 @@ const markdownComponents: Components = {
       </code>
     );
   },
-
-  /* -------------------------------------------------------
-     LISTS
-  ------------------------------------------------------- */
 
   ul: ({ children }) => (
     <ul className="mb-7 ml-6 list-disc space-y-3 text-[15px] leading-8 sm:text-base">
@@ -492,10 +388,6 @@ const markdownComponents: Components = {
     </li>
   ),
 
-  /* -------------------------------------------------------
-     BLOCKQUOTE
-  ------------------------------------------------------- */
-
   blockquote: ({ children }) => (
     <blockquote className="my-8 border-l-[5px] border-black bg-(--yellow) px-6 py-5 sm:px-7">
 
@@ -510,27 +402,16 @@ const markdownComponents: Components = {
     </blockquote>
   ),
 
-  /* -------------------------------------------------------
-     HORIZONTAL RULE
-  ------------------------------------------------------- */
-
   hr: () => (
     <div className="my-10 flex items-center gap-3">
-
       <div className="h-2 w-2 border-2 border-black bg-(--coral)" />
-
       <div className="h-[2px] flex-1 bg-black/15" />
-
       <div className="mono text-[8px] uppercase tracking-widest text-black/35">
         continue
       </div>
 
     </div>
   ),
-
-  /* -------------------------------------------------------
-     LINKS
-  ------------------------------------------------------- */
 
   a: ({
     href,
@@ -546,13 +427,8 @@ const markdownComponents: Components = {
     </a>
   ),
 
-  /* -------------------------------------------------------
-     TABLE
-  ------------------------------------------------------- */
-
   table: ({ children }) => (
     <div className="my-8 overflow-x-auto border-2 border-black shadow-[5px_5px_0_var(--black)]">
-
       <table className="w-full min-w-[520px] border-collapse text-sm">
         {children}
       </table>
@@ -591,10 +467,6 @@ const markdownComponents: Components = {
   ),
 };
 
-/* =========================================================
-   ANSWER RENDERER
-========================================================= */
-
 export default function AnswerRenderer({
   content,
   className = "",
@@ -617,8 +489,6 @@ export default function AnswerRenderer({
       className={`answer-renderer min-w-0 ${className}`}
     >
 
-      {/* CONTENT */}
-
       <ReactMarkdown
         remarkPlugins={[
           remarkGfm,
@@ -627,14 +497,10 @@ export default function AnswerRenderer({
         rehypePlugins={[
           rehypeKatex,
         ]}
-        components={
-          markdownComponents
-        }
+        components={ markdownComponents }
       >
         {normalizedContent}
       </ReactMarkdown>
-
-      
 
     </article>
   );

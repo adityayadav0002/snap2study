@@ -19,7 +19,6 @@ type HistoryItem = {
 
 export default function HistoryPage() {
   const router = useRouter();
-
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -27,7 +26,6 @@ export default function HistoryPage() {
 
   useEffect(() => {
     let cancelled = false;
-
     async function loadHistory() {
       try {
         const response = await fetch("/api/history", {
@@ -35,39 +33,30 @@ export default function HistoryPage() {
           credentials: "include",
           cache: "no-store",
         });
-
         if (response.status === 401) {
           router.replace("/auth");
           return;
         }
 
         const data = await response.json();
-
         if (!response.ok) {
           throw new Error(
-            data?.error ||
-              "Unable to load question history."
+            data?.error || "Unable to load question history."
           );
         }
 
         if (!cancelled) {
           setHistory(
-            Array.isArray(data?.history)
-              ? data.history
-              : []
+            Array.isArray(data?.history) ? data.history : []
           );
         }
       } catch (err) {
-        console.error(
-          "[Snap2Study] History loading error:",
-          err
+        console.error( "[Snap2Study] History loading error:", err
         );
 
         if (!cancelled) {
           setError(
-            err instanceof Error
-              ? err.message
-              : "Unable to load question history."
+            err instanceof Error ? err.message : "Unable to load question history."
           );
         }
       } finally {
@@ -78,7 +67,6 @@ export default function HistoryPage() {
     }
 
     loadHistory();
-
     return () => {
       cancelled = true;
     };
@@ -108,7 +96,6 @@ export default function HistoryPage() {
 
   function formatDate(date: string) {
     const parsed = new Date(date);
-
     if (Number.isNaN(parsed.getTime())) {
       return "Unknown date";
     }
@@ -129,11 +116,9 @@ export default function HistoryPage() {
     const cleaned = question
       .replace(/\s+/g, " ")
       .trim();
-
     if (cleaned.length <= 180) {
       return cleaned;
     }
-
     return (
       cleaned.slice(0, 180).trimEnd() +
       "..."
@@ -146,21 +131,14 @@ export default function HistoryPage() {
     switch (
       difficulty.toLowerCase()
     ) {
-      case "easy":
-        return "bg-(--yellow)";
-
-      case "hard":
-        return "bg-black text-white";
-
-      default:
-        return "bg-(--cream)";
+      case "easy": return "bg-(--yellow)";
+      case "hard": return "bg-black text-white";
+      default: return "bg-(--cream)";
     }
   }
 
   return (
     <main className="min-h-screen bg-(--cream)">
-      {/* HEADER */}
-
       <section className="border-b-2 border-black">
         <div className="container py-16 sm:py-20">
           <div className="mb-5 flex items-center gap-3">
@@ -188,12 +166,7 @@ export default function HistoryPage() {
         </div>
       </section>
 
-      {/* CONTENT */}
-
       <section className="container py-10 sm:py-14">
-
-        {/* SEARCH */}
-
         <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-md">
             <input
@@ -205,34 +178,17 @@ export default function HistoryPage() {
                 )
               }
               placeholder="Search your questions..."
-              className="
-                mono
-                w-full
-                border-2
-                border-black
-                bg-white
-                px-4
-                py-4
-                text-xs
-                outline-none
-                transition
-                placeholder:opacity-50
-                focus:bg-(--yellow)
-              "
-            />
+              className=" mono w-full border-2 border-black bg-white px-4 py-4 text-xs outline-none transition placeholder:opacity-50 focus:bg-(--yellow)
+              "/>
           </div>
 
           {!loading && (
             <div className="mono text-[9px] font-bold uppercase tracking-[0.14em] opacity-60">
               {filteredHistory.length}{" "}
-              {filteredHistory.length === 1
-                ? "question"
-                : "questions"}
+              {filteredHistory.length === 1 ? "question" : "questions"}
             </div>
           )}
         </div>
-
-        {/* LOADING */}
 
         {loading && (
           <div className="border-2 border-black bg-white">
@@ -243,8 +199,6 @@ export default function HistoryPage() {
             </div>
           </div>
         )}
-
-        {/* ERROR */}
 
         {!loading && error && (
           <div className="border-2 border-black bg-white p-8">
@@ -261,30 +215,12 @@ export default function HistoryPage() {
                 window.location.reload()
               }
               className="
-                mono
-                mt-6
-                border-2
-                border-black
-                bg-(--yellow)
-                px-5
-                py-3
-                text-[9px]
-                font-bold
-                uppercase
-                tracking-[0.12em]
-                shadow-[3px_3px_0_var(--black)]
-                transition-all
-                hover:-translate-x-0.5
-                hover:-translate-y-0.5
-                hover:shadow-[5px_5px_0_var(--black)]
-              "
-            >
+                mono mt-6 border-2 border-black bg-(--yellow) px-5 py-3 text-[9px] font-bold uppercase tracking-[0.12em] shadow-[3px_3px_0_var(--black)] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0_var(--black)]
+              ">
               Try again
             </button>
           </div>
         )}
-
-        {/* EMPTY */}
 
         {!loading &&
           !error &&
@@ -309,27 +245,9 @@ export default function HistoryPage() {
                   <a
                     href="/#snap"
                     className="
-                      mono
-                      mt-7
-                      inline-flex
-                      items-center
-                      gap-3
-                      border-2
-                      border-black
-                      bg-(--yellow)
-                      px-5
-                      py-4
-                      text-[9px]
-                      font-bold
-                      uppercase
-                      tracking-[0.12em]
-                      shadow-[3px_3px_0_var(--black)]
-                      transition-all
-                      hover:-translate-x-0.5
-                      hover:-translate-y-0.5
-                      hover:shadow-[5px_5px_0_var(--black)]
-                    "
-                  >
+                      mono mt-7 inline-flex items-center gap-3 border-2 border-black bg-(--yellow) px-5
+                      py-4 text-[9px] font-bold uppercase tracking-[0.12em] shadow-[3px_3px_0_var(--black)] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0_var(--black)]
+                    ">
                     Snap a question
                     <span className="text-base">
                       →
@@ -339,8 +257,6 @@ export default function HistoryPage() {
               </div>
             </div>
           )}
-
-        {/* NO SEARCH RESULTS */}
 
         {!loading &&
           !error &&
@@ -358,8 +274,6 @@ export default function HistoryPage() {
             </div>
           )}
 
-        {/* HISTORY LIST */}
-
         {!loading &&
           !error &&
           filteredHistory.length > 0 && (
@@ -369,17 +283,9 @@ export default function HistoryPage() {
                   <article
                     key={item.id}
                     className="
-                      group
-                      border-b-2
-                      border-black
-                      bg-white
-                      transition-colors
-                      hover:bg-(--yellow)
-                    "
-                  >
+                      group border-b-2 border-black bg-white transition-colors hover:bg-(--yellow)
+                    ">
                     <div className="grid gap-6 px-5 py-7 sm:grid-cols-[70px_1fr_auto] sm:px-7 sm:py-8">
-
-                      {/* NUMBER */}
 
                       <div className="mono hidden text-[10px] font-bold opacity-40 sm:block">
                         {String(
@@ -387,10 +293,7 @@ export default function HistoryPage() {
                         ).padStart(2, "0")}
                       </div>
 
-                      {/* MAIN */}
-
                       <div className="min-w-0">
-
                         <div className="mb-4 flex flex-wrap items-center gap-2">
                           <span className="mono border-2 border-black px-2 py-1 text-[8px] font-bold uppercase tracking-[0.12em]">
                             {item.subject}
@@ -402,36 +305,23 @@ export default function HistoryPage() {
 
                           <span
                             className={`
-                              mono
-                              border-2
-                              border-black
-                              px-2
-                              py-1
-                              text-[8px]
-                              font-bold
-                              uppercase
-                              tracking-[0.12em]
+                              mono  border-2 border-black px-2 py-1 text-[8px] font-bold uppercase tracking-[0.12em]
                               ${getDifficultyClass(
                                 item.difficulty
                               )}
-                            `}
-                          >
+                            `}>
                             {item.difficulty}
                           </span>
                         </div>
 
                         <h2 className="max-w-3xl text-xl leading-snug tracking-[-0.02em] sm:text-2xl">
-  <AnswerRenderer content={getQuestionPreview(item.question)} />
-</h2>
+                          <AnswerRenderer content={getQuestionPreview(item.question)} />
+                        </h2>
 
                         <div className="mono mt-5 text-[8px] font-bold uppercase tracking-[0.12em] opacity-50">
-                          {formatDate(
-                            item.createdAt
-                          )}
+                          {formatDate( item.createdAt )}
                         </div>
                       </div>
-
-                      {/* VIEW */}
 
                       <div className="flex items-end sm:items-center">
                         <button
@@ -443,22 +333,8 @@ export default function HistoryPage() {
                             )
                           }
                           className="
-                            mono
-                            inline-flex
-                            items-center
-                            gap-3
-                            border-2
-                            border-black
-                            bg-(--cream)
-                            px-5
-                            py-3
-                            text-[9px]
-                            font-bold
-                            uppercase
-                            tracking-[0.12em]
-                            transition-all
-                            group-hover:bg-white
-                            hover:bg-(--yellow)
+                            mono inline-flex items-center gap-3 border-2 border-black 
+                            bg-(--cream) px-5 py-3 text-[9px] font-bold uppercase tracking-[0.12em] transition-all group-hover:bg-white hover:bg-(--yellow)
                           "
                         >
                           View

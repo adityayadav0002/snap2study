@@ -7,7 +7,6 @@ const DB_NAME = "snap2study";
 export async function POST(request: Request) {
   try {
     const user = await getCurrentUser();
-
     if (!user) {
       return NextResponse.json(
         {
@@ -18,7 +17,6 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-
     if (
       !body ||
       typeof body.question !== "string" ||
@@ -40,8 +38,7 @@ export async function POST(request: Request) {
 
     const keyPoints = body.key_points
       .filter(
-        (point: unknown): point is string =>
-          typeof point === "string"
+        (point: unknown): point is string => typeof point === "string"
       )
       .map((point: string) => point.trim())
       .filter(Boolean)
@@ -58,10 +55,8 @@ export async function POST(request: Request) {
 
     const client = await clientPromise;
     const db = client.db(DB_NAME);
-
     const analysis = {
       userId: user._id.toString(),
-
       question: body.question.trim(),
       subject: body.subject.trim(),
       topic: body.topic.trim(),
@@ -69,9 +64,7 @@ export async function POST(request: Request) {
       answer: body.answer.trim(),
       explanation: body.explanation.trim(),
       key_points: keyPoints,
-      similar_question:
-        body.similar_question.trim(),
-
+      similar_question: body.similar_question.trim(),
       createdAt: new Date(),
     };
 
@@ -84,10 +77,7 @@ export async function POST(request: Request) {
       id: result.insertedId.toString(),
     });
   } catch (error) {
-    console.error(
-      "[Snap2Study] Save history error:",
-      error
-    );
+    console.error( "[Snap2Study] Save history error:", error );
 
     return NextResponse.json(
       {
@@ -101,7 +91,6 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const user = await getCurrentUser();
-
     if (!user) {
       return NextResponse.json(
         {
@@ -113,17 +102,11 @@ export async function GET(request: Request) {
 
     const client = await clientPromise;
     const db = client.db(DB_NAME);
-
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
-    /* =====================================================
-       VIEW SINGLE HISTORY ITEM
-    ===================================================== */
-
     if (id) {
       const { ObjectId } = await import("mongodb");
-
       if (!ObjectId.isValid(id)) {
         return NextResponse.json(
           {
@@ -139,7 +122,6 @@ export async function GET(request: Request) {
           _id: new ObjectId(id),
           userId: user._id.toString(),
         });
-
       if (!item) {
         return NextResponse.json(
           {
@@ -165,10 +147,6 @@ export async function GET(request: Request) {
         },
       });
     }
-
-    /* =====================================================
-       VIEW HISTORY LIST
-    ===================================================== */
 
     const history = await db
       .collection("history")
@@ -201,12 +179,7 @@ export async function GET(request: Request) {
       success: true,
       history: normalizedHistory,
     });
-  } catch (error) {
-    console.error(
-      "[Snap2Study] Get history error:",
-      error
-    );
-
+  } catch (error) { console.error("[Snap2Study] Get history error:", error );
     return NextResponse.json(
       {
         error: "Unable to load question history.",

@@ -7,7 +7,6 @@ const DB_NAME = "snap2study";
 export async function GET() {
   try {
     const user = await getCurrentUser();
-
     if (!user) {
       return NextResponse.json(
         {
@@ -17,7 +16,6 @@ export async function GET() {
         { status: 401 }
       );
     }
-
     return NextResponse.json({
       authenticated: true,
       user: {
@@ -27,11 +25,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error(
-      "[Snap2Study] Profile GET error:",
-      error
-    );
-
+    console.error( "[Snap2Study] Profile GET error:", error );
     return NextResponse.json(
       {
         error: "Unable to load profile.",
@@ -41,12 +35,9 @@ export async function GET() {
   }
 }
 
-export async function PATCH(
-  request: Request
-) {
+export async function PATCH( request: Request ) {
   try {
     const user = await getCurrentUser();
-
     if (!user) {
       return NextResponse.json(
         {
@@ -57,9 +48,7 @@ export async function PATCH(
     }
 
     let body: unknown;
-
-    try {
-      body = await request.json();
+    try { body = await request.json();
     } catch {
       return NextResponse.json(
         {
@@ -69,12 +58,7 @@ export async function PATCH(
       );
     }
 
-    if (
-      !body ||
-      typeof body !== "object" ||
-      !("name" in body) ||
-      typeof body.name !== "string"
-    ) {
+    if ( !body || typeof body !== "object" || !("name" in body) || typeof body.name !== "string" ) {
       return NextResponse.json(
         {
           error: "Name is required.",
@@ -84,12 +68,10 @@ export async function PATCH(
     }
 
     const name = body.name.trim();
-
     if (name.length > 50) {
       return NextResponse.json(
         {
-          error:
-            "Name must be 50 characters or less.",
+          error: "Name must be 50 characters or less.",
         },
         { status: 400 }
       );
@@ -97,7 +79,6 @@ export async function PATCH(
 
     const client = await clientPromise;
     const db = client.db(DB_NAME);
-
     await db.collection("users").updateOne(
       {
         _id: user._id,
@@ -119,11 +100,7 @@ export async function PATCH(
       },
     });
   } catch (error) {
-    console.error(
-      "[Snap2Study] Profile PATCH error:",
-      error
-    );
-
+    console.error("[Snap2Study] Profile PATCH error:", error );
     return NextResponse.json(
       {
         error: "Unable to update profile.",

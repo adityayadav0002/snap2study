@@ -4,7 +4,6 @@ import clientPromise from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 
 const DB_NAME = "snap2study";
-
 type RouteContext = {
   params: Promise<{
     id: string;
@@ -17,7 +16,6 @@ export async function GET(
 ) {
   try {
     const user = await getCurrentUser();
-
     if (!user) {
       return NextResponse.json(
         {
@@ -28,7 +26,6 @@ export async function GET(
     }
 
     const { id } = await context.params;
-
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
         {
@@ -68,17 +65,12 @@ export async function GET(
         answer: analysis.answer,
         explanation: analysis.explanation,
         key_points: analysis.key_points,
-        similar_question:
-          analysis.similar_question,
+        similar_question: analysis.similar_question,
         createdAt: analysis.createdAt,
       },
     });
   } catch (error) {
-    console.error(
-      "[Snap2Study] History detail error:",
-      error
-    );
-
+    console.error("[Snap2Study] History detail error:", error );
     return NextResponse.json(
       {
         error: "Unable to load saved analysis.",

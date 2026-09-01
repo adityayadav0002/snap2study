@@ -1,17 +1,3 @@
-/**
- * Snap2Study Image Optimizer
- *
- * Optimizes uploaded educational images before sending them
- * to the AI API.
- *
- * Goals:
- * - Keep mathematical text readable
- * - Resize unnecessarily huge images
- * - Reduce file size
- * - Preserve screenshots and documents
- * - Return a base64 data URL ready for OpenRouter
- */
-
 const MAX_DIMENSION = 2200;
 const TARGET_MAX_BYTES = 3.5 * 1024 * 1024;
 const MIN_JPEG_QUALITY = 0.72;
@@ -33,7 +19,6 @@ function loadImage(
 ): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
-
     const img = new Image();
 
     img.onload = () => {
@@ -44,12 +29,9 @@ function loadImage(
     img.onerror = () => {
       URL.revokeObjectURL(url);
       reject(
-        new Error(
-          "The selected image could not be read."
-        )
+        new Error("The selected image could not be read.")
       );
     };
-
     img.src = url;
   });
 }
@@ -62,7 +44,6 @@ function calculateDimensions(
     width,
     height
   );
-
   if (largestSide <= MAX_DIMENSION) {
     return {
       width,
@@ -70,9 +51,7 @@ function calculateDimensions(
     };
   }
 
-  const scale =
-    MAX_DIMENSION / largestSide;
-
+  const scale = MAX_DIMENSION / largestSide;
   return {
     width: Math.round(width * scale),
     height: Math.round(height * scale),
@@ -82,9 +61,7 @@ function calculateDimensions(
 function dataUrlToBytes(
   dataUrl: string
 ): number {
-  const base64 =
-    dataUrl.split(",")[1] ?? "";
-
+  const base64 = dataUrl.split(",")[1] ?? "";
   return Math.ceil(
     (base64.length * 3) / 4
   );
@@ -104,23 +81,17 @@ export async function optimizeImage(
   file: File
 ): Promise<OptimizeResult> {
   if (!file.type.startsWith("image/")) {
-    throw new Error(
-      "Please select a valid image file."
-    );
+    throw new Error("Please select a valid image file.");
   }
 
   const img = await loadImage(file);
-
   const originalWidth = img.naturalWidth;
   const originalHeight = img.naturalHeight;
-
   if (
     !originalWidth ||
     !originalHeight
   ) {
-    throw new Error(
-      "The image dimensions could not be detected."
-    );
+    throw new Error("The image dimensions could not be detected.");
   }
 
   const dimensions =
@@ -129,9 +100,7 @@ export async function optimizeImage(
       originalHeight
     );
 
-  const canvas =
-    document.createElement("canvas");
-
+  const canvas = document.createElement("canvas");
   canvas.width = dimensions.width;
   canvas.height = dimensions.height;
 
@@ -142,17 +111,11 @@ export async function optimizeImage(
     });
 
   if (!ctx) {
-    throw new Error(
-      "Your browser could not prepare the image."
-    );
+    throw new Error("Your browser could not prepare the image.");
   }
 
-  // Better quality when shrinking educational screenshots.
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
-
-  // White background prevents transparent PNGs from
-  // becoming black when converted to JPEG.
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(
     0,
@@ -169,45 +132,26 @@ export async function optimizeImage(
     dimensions.height
   );
 
-  // -------------------------------------------------------
-  // Try high quality first.
-  // -------------------------------------------------------
-
-  let quality =
-    MAX_JPEG_QUALITY;
-
+  let quality = MAX_JPEG_QUALITY;
   let dataUrl =
     canvasToDataUrl(
       canvas,
       quality
     );
-
-  let finalSize =
-    dataUrlToBytes(dataUrl);
-
-  // -------------------------------------------------------
-  // Gradually reduce JPEG quality only when necessary.
-  // -------------------------------------------------------
+  let finalSize = dataUrlToBytes(dataUrl);
 
   while (
     finalSize > TARGET_MAX_BYTES &&
     quality > MIN_JPEG_QUALITY
   ) {
     quality -= 0.04;
-
     dataUrl =
       canvasToDataUrl(
         canvas,
         quality
       );
-
-    finalSize =
-      dataUrlToBytes(dataUrl);
+    finalSize = dataUrlToBytes(dataUrl);
   }
-
-  // -------------------------------------------------------
-  // If JPEG is still too large, resize further.
-  // -------------------------------------------------------
 
   if (
     finalSize > TARGET_MAX_BYTES
@@ -216,7 +160,6 @@ export async function optimizeImage(
       TARGET_MAX_BYTES /
         finalSize
     );
-
     const reducedWidth =
       Math.max(
         900,
@@ -224,7 +167,6 @@ export async function optimizeImage(
           canvas.width * scale
         )
       );
-
     const reducedHeight =
       Math.max(
         900,
@@ -232,15 +174,9 @@ export async function optimizeImage(
           canvas.height * scale
         )
       );
-
-    canvas.width =
-      reducedWidth;
-
-    canvas.height =
-      reducedHeight;
-
+    canvas.width = reducedWidth;
+    canvas.height = reducedHeight;
     ctx.fillStyle = "#ffffff";
-
     ctx.fillRect(
       0,
       0,
@@ -262,8 +198,7 @@ export async function optimizeImage(
         MIN_JPEG_QUALITY
       );
 
-    finalSize =
-      dataUrlToBytes(dataUrl);
+    finalSize = dataUrlToBytes(dataUrl);
   }
 
   return {

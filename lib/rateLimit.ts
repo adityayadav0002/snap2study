@@ -4,13 +4,11 @@ type RateLimitEntry = {
 };
 
 const requests = new Map<string, RateLimitEntry>();
-
 const LIMIT = 10;
 const WINDOW_MS = 10 * 60 * 1000;
 
 export function checkRateLimit(identifier: string) {
   const now = Date.now();
-
   const existing = requests.get(identifier);
 
   if (!existing || now >= existing.resetAt) {
