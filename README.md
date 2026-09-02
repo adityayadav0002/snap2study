@@ -6,24 +6,24 @@ Snap2Study is a AI based website tool which helps students to learn much faster 
 
 The user just have to click and upload the snap of the question and the AI will do analysis and provide the user with answer, explanation, topic, difficulty, key points, and a much similar question to do practice of it.
 
-### ✨ Features
+### Features of Snap2Study
 
-* 🤖 **AI-Based Question Analysis** 
-* 🔐 **Secure Login System** — Email-Based OTP authentication 
-* 👤 **Profile** — Personal account details with previous analyzed questions
-* 📚 **Analyzed Question History** 
-* 🛡️ **Security Features** 
-* 📱 **Responsive Design**
+* **AI-Based Analysis** 
+* **Secure Email OTP Based Login System**
+* **Profile / Account Details**
+* **Analyzed Question History** 
+* **Security Features** 
+* **Responsive Design**
 
-### 🎨 Design
+### UI Design Concept
 
 The UI of the website is based on the idea of combination of editorial and brutalist UI with clean elements display and bold typography.
 
-### 🧱 Tech Stack
+### Tech Stack of Snap2Study
 
 **Next.js 16 · React 19 · TypeScript · Tailwind CSS · MongoDB · Nodemailer · JOSE · Vercel**
 
-### 🚀 How To Run Locally
+### Steps To Run Snap2Study Locally - 
 
 ```bash
 git clone https://github.com/adityayadav0002/snap2study.git
@@ -39,7 +39,7 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-### 👨‍💻 About
+### About
 
 **Aditya Yadav**
 
